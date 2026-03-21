@@ -12,6 +12,7 @@ from arminator_aws_backend import (
     get_session_payload,
     get_job_payload,
     request_verification_link,
+    update_session_draft,
 )
 
 COOKIE_NAME = "arminator_client_id"
@@ -133,6 +134,16 @@ def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
         client_id = str(request_cookie_map(event).get(COOKIE_NAME) or "").strip()
         status_code, response_payload = end_session(client_id, headers=headers)
         return json_response(status_code, response_payload, set_cookie=clear_client_cookie())
+
+    if method == "POST" and path == "/api/session/draft":
+        try:
+            payload = parse_body(event)
+        except (ValueError, json.JSONDecodeError) as exc:
+            return json_response(400, {"error": str(exc)})
+        client_id, set_cookie = resolve_client_id(event, payload)
+        draft = payload.get("draft") if isinstance(payload.get("draft"), dict) else None
+        status_code, response_payload = update_session_draft(client_id, draft, headers=headers)
+        return json_response(status_code, response_payload, set_cookie=set_cookie)
 
     if method == "POST" and path == "/api/verification-links":
         try:

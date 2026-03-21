@@ -311,6 +311,10 @@ h2 {
   text-decoration: underline;
 }
 
+.radio-option a {
+  font-style: italic;
+}
+
 .version-radio-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -521,6 +525,17 @@ button:disabled {
 
 #submit-button {
   text-transform: none;
+}
+
+#reset-button {
+  text-transform: none;
+  background: var(--error);
+  border-color: var(--error);
+}
+
+#reset-button:hover:not(:disabled) {
+  background: #8d3732;
+  border-color: #8d3732;
 }
 
 .status-state-label {

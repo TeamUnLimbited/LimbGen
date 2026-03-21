@@ -668,6 +668,17 @@ def end_session(client_id: str, headers: Optional[Dict[str, str]] = None) -> Tup
     return 200, payload
 
 
+def update_session_draft(client_id: str, draft: Optional[Dict[str, Any]], headers: Optional[Dict[str, str]] = None) -> Tuple[int, Dict[str, Any]]:
+    if client_id:
+        record = get_record(session_key(client_id))
+        if record:
+            set_job_fields(session_key(client_id), {"draft": draft if isinstance(draft, dict) else None})
+
+    payload = get_session_payload(client_id, headers=headers)
+    payload["message"] = "Draft updated."
+    return 200, payload
+
+
 def try_acquire_dispatch_lock(holder: str) -> bool:
     now = int(time.time())
     expires_at = now + DISPATCH_LOCK_TTL_SECONDS

@@ -21,6 +21,7 @@ const errorBox = document.getElementById("error-box");
 const generateButton = document.getElementById("generate-button");
 const cancelButton = document.getElementById("cancel-button");
 const downloadLink = document.getElementById("download-link");
+const resetButton = document.getElementById("reset-button");
 const endSessionButton = document.getElementById("end-session-button");
 const pageTitle = document.getElementById("page-title");
 const pageSubtitle = document.getElementById("page-subtitle");
@@ -251,6 +252,7 @@ function syncUiState() {
   generateButton.classList.toggle("hidden", !statusEnabled || generationActive);
   generateButton.disabled = !canGenerate;
   cancelButton.classList.toggle("hidden", !generationActive);
+  resetButton.disabled = generationActive;
   endSessionButton.disabled = generationActive;
 
   setIdleStatusCopy();
@@ -394,6 +396,69 @@ function resetJobUi() {
   downloadLink.classList.add("hidden");
   downloadLink.removeAttribute("href");
   jobMessage.textContent = "Complete request details, verify your email, choose the device, and generate the parts.";
+}
+
+function clearFieldInputs(root) {
+  for (const control of root.querySelectorAll("input, select, textarea")) {
+    if (control.name === "arm_version") {
+      continue;
+    }
+    if (control.type === "radio" || control.type === "checkbox") {
+      control.checked = false;
+    } else {
+      control.value = "";
+    }
+  }
+}
+
+function emptyDraftPayload() {
+  return {
+    arm_version: "",
+    requester: {},
+    parameters: {},
+  };
+}
+
+async function persistClearedDraft() {
+  const response = await fetch("/api/session/draft", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ draft: null }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Unable to clear the saved draft.");
+  }
+  return data;
+}
+
+async function resetFormState(message = "Form reset. Session is still active.") {
+  if (hasActiveGeneration()) {
+    return;
+  }
+
+  clearDraft();
+  try {
+    await persistClearedDraft();
+  } catch (error) {
+    showSubmissionNote(error.message, false);
+    return;
+  }
+
+  currentJobState = null;
+  setActiveJobId(null);
+  setArmVersionSelection("");
+  await loadConfig("");
+  clearFieldInputs(requestSections);
+  clearFieldInputs(parameterSections);
+  updateConditionalFields();
+  resetJobUi();
+  closeVerificationModal();
+  saveDraft(emptyDraftPayload());
+  setVerificationUi();
+  showSubmissionNote(message);
 }
 
 function syncSliderValue(slider) {
@@ -1242,6 +1307,15 @@ endSessionButton.addEventListener("click", async () => {
     showSubmissionNote(data.message || "Session ended. Verify by magic link again to continue.");
   } catch (error) {
     showSubmissionNote(error.message, false);
+  } finally {
+    syncUiState();
+  }
+});
+
+resetButton.addEventListener("click", async () => {
+  resetButton.disabled = true;
+  try {
+    await resetFormState(sessionState.verified ? "Form reset. Session is still active." : "Form reset.");
   } finally {
     syncUiState();
   }
