@@ -8,6 +8,7 @@ For the broader design history, implementation decisions, and consolidated lesso
 
 - Public URL: [https://limbgen.teamunlimbited.org](https://limbgen.teamunlimbited.org)
 - CloudFront domain: `dgoyd3w2re4bs.cloudfront.net`
+- GitHub repo remote: `git@github.com:TeamUnLimbited/LimbGen.git`
 - AWS account: `236209347845`
 - Region: `eu-west-2`
 - Current deployment version: `20260320-2259-renderer-trixie`
@@ -26,6 +27,22 @@ For the broader design history, implementation decisions, and consolidated lesso
 - Renderer task definition: `arminator-renderer`
 
 Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/infra/aws/outputs.tf).
+
+## GitHub repo state
+
+- Repository remote is configured and pushes are working over SSH.
+- The repository has been scrubbed so no `.scad` files exist in reachable git history.
+- All `.scad` files are ignored going forward.
+- Repo hygiene is now enforced by:
+  - [`scripts/check_repo_hygiene.sh`](/Users/droo/arminator/scripts/check_repo_hygiene.sh)
+  - [`.github/workflows/repo-hygiene.yml`](/Users/droo/arminator/.github/workflows/repo-hygiene.yml)
+- The private OpenSCAD source remains local-only and is not present in the GitHub repository contents or reachable branch history.
+
+### Public visibility
+
+- As of `2026-03-21`, the repository is not publicly readable from anonymous GitHub API access.
+- SSH push access alone is not enough to change repository visibility.
+- To switch the GitHub repo to public, a GitHub web session, `gh` auth, or a PAT with repository-admin rights is still required.
 
 ## Current production behavior
 
