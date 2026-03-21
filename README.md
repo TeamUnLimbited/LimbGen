@@ -12,13 +12,23 @@ The production deployment is live at [https://limbgen.teamunlimbited.org](https:
 
 ## OpenSCAD source file
 
-The real `UnLimbited Arm V3.00.scad` file is intentionally not committed to GitHub and must remain local.
+No `.scad` files are committed to this repository. The real `UnLimbited Arm V3.00.scad` file is intentionally not committed to GitHub and must remain local.
 
 - The repository includes a placeholder at [`UnLimbited Arm V3.00.scad.example`](/Users/droo/arminator/UnLimbited%20Arm%20V3.00.scad.example)
 - To run the project locally, place the real file at:
   - `UnLimbited Arm V3.00.scad`
 
 Without that local file, render and deployment paths that package the OpenSCAD source will not work.
+
+## Renderer image
+
+The built renderer container image is not stored in Git. This repository tracks the image definition and rollout inputs instead:
+
+- [`Dockerfile.renderer-trixie`](/Users/droo/arminator/Dockerfile.renderer-trixie)
+- [`scripts/build_renderer_trixie_image.sh`](/Users/droo/arminator/scripts/build_renderer_trixie_image.sh)
+- [`infra/aws/terraform.tfvars.example`](/Users/droo/arminator/infra/aws/terraform.tfvars.example)
+
+The current live renderer image tag is documented below and can be rebuilt from this repository.
 
 ## Current production architecture
 
