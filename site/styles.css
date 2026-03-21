@@ -311,6 +311,10 @@ h2 {
   text-decoration: underline;
 }
 
+.version-selector-copy a {
+  font-style: italic;
+}
+
 .radio-option a {
   font-style: italic;
 }
