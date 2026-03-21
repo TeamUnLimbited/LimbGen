@@ -18,8 +18,9 @@ VERIFIED_SESSION_TTL_SECONDS = max(3600, int(os.environ.get("VERIFIED_SESSION_TT
 VALID_PURPOSES = {"recipient", "project", "other"}
 VALID_RECIPIENT_SEXES = {"Male", "Female"}
 ARM_VERSION_OPTIONS = [
-    {"value": "v2", "label": "Version2 Alfie Edition"},
-    {"value": "v3", "label": "Version 3 BETA"},
+    {"value": "v2", "label": "Version 2"},
+    {"value": "v3", "label": "Version 3 Beta"},
+    {"value": "phoenix", "label": "UnLimbited Phoenix"},
 ]
 DEFAULT_ARM_VERSION = "v3"
 RENDER_STEP_TEMPLATES = {
@@ -40,6 +41,16 @@ RENDER_STEP_TEMPLATES = {
         {"part_label": "Forearm", "status_part": "Forearm"},
         {"part_label": "Hand", "status_part": "Hand"},
     ],
+    "phoenix": [
+        {"part_label": "Pins", "status_part": "Pins"},
+        {"part_label": "Tension Pins", "status_part": "Pins"},
+        {"part_label": "Jig", "status_part": "Cuff Jig"},
+        {"part_label": "Gauntlet", "status_part": "Cuff"},
+        {"part_label": "Tension Box", "status_part": "Forearm"},
+        {"part_label": "Palm", "status_part": "Hand"},
+        {"part_label": "Fingers", "status_part": "Hand"},
+        {"part_label": "Phalanx", "status_part": "Hand"},
+    ],
 }
 
 ASSIGNMENT_RE = re.compile(
@@ -50,6 +61,7 @@ LABEL_OVERRIDES = {
     "BicepCircum": "Bicep Circumference",
     "ForearmLen": "Forarm Length",
     "HandLen": "Hand Length",
+    "HandPerc": "Hand Scale (%)",
     "LeftRight": "Left or Right",
     "PinHoleDia": "Pin Hole Diameter",
 }
@@ -64,6 +76,10 @@ FIELD_OVERRIDES_BY_VERSION = {
     },
     "v3": {
         "LeftRight": {"section": "Arm Selection"},
+    },
+    "phoenix": {
+        "LeftRight": {"section": "Hand Selection"},
+        "HandPerc": {"section": "Hand Measurements (%)"},
     },
 }
 
@@ -277,6 +293,7 @@ def build_arm_version_specs() -> Dict[str, ArmVersionSpec]:
     spec_paths = {
         "v2": BASE_DIR / "UnLimbited_Arm_V2.2.scad",
         "v3": BASE_DIR / "UnLimbited Arm V3.00.scad",
+        "phoenix": BASE_DIR / "UnLimbitedPhoenix.scad",
     }
     specs: Dict[str, ArmVersionSpec] = {}
     for option in ARM_VERSION_OPTIONS:
@@ -458,6 +475,8 @@ def build_archive_name(parameters: Dict[str, Any], arm_version: str) -> str:
             f"BC{int(parameters['BicepCircum'])}"
             f"PH{int(parameters['PinHoleDia'])}.zip"
         )
+    if arm_version == "phoenix":
+        return f"Phoenix-{side}-HP{int(parameters['HandPerc'])}.zip"
     return (
         f"{side}"
         f"K{int(parameters['Knuckle_Width'])}"

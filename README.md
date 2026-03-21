@@ -4,7 +4,10 @@ This repository turns private local UnLimbited arm OpenSCAD sources into a publi
 
 - enters request details and arm measurements
 - verifies their email with a magic link
-- selects `Version2 Alfie Edition` or `Version 3 BETA`
+- selects a device:
+  - `Version 2`
+  - `Version 3 Beta`
+  - `UnLimbited Phoenix`
 - starts a fresh part generation job
 - watches per-part progress
 - downloads a ZIP of generated STL files
@@ -13,7 +16,7 @@ The production deployment is live at [https://limbgen.teamunlimbited.org](https:
 
 ## OpenSCAD source files
 
-No real `.scad` files are committed to this repository. The private arm source files used for `v2` and `v3` rendering must remain local and must not be synced to GitHub.
+No real `.scad` files are committed to this repository. The private device source files used for `v2`, `v3`, and `phoenix` rendering must remain local and must not be synced to GitHub.
 
 - The repository includes a placeholder at [`UnLimbited Arm V3.00.scad.example`](/Users/droo/arminator/UnLimbited%20Arm%20V3.00.scad.example)
 - Without the real local source files, render and deployment paths that package OpenSCAD sources will not work.
@@ -67,14 +70,16 @@ For the architecture diagrams and component map, see [`docs/architecture/ARCHITE
 
 - Always generates the full kit; users do not choose individual parts
 - Uses the public OpenSCAD customizer parameters only
-- Requires an arm-version selection before generation:
-  - `Version2 Alfie Edition`
-  - `Version 3 BETA`
-- Loads version-specific measurement fields and validation rules from the matching SCAD source
+- Requires a device selection before generation:
+  - `Arm`
+    - `Version 2`
+    - `Version 3 Beta`
+  - `Hand`
+    - `UnLimbited Phoenix`
+- Loads device-specific measurement fields and validation rules from the matching SCAD source
 - Uses a verification-first left-to-right flow:
-  - `Lets Go !` establishes or reuses the verified session
+  - `Verify Session` establishes or reuses the verified session
   - `Generate` in panel 3 starts the actual job
-  - `Reset` clears request details and device parameters but keeps the current session active
   - `End Session` clears the cookie-backed verified session and requires a fresh magic link
 - Generates parts in this order:
   1. `Pins`
@@ -107,10 +112,10 @@ For the architecture diagrams and component map, see [`docs/architecture/ARCHITE
    - country
    - purpose
    - recipient or project metadata
-4. Clicking `Lets Go !` opens the email-verification modal if the browser session is not yet verified.
+4. Clicking `Verify Session` opens the email-verification modal if the browser session is not yet verified.
 5. The user receives a magic link, verifies, and returns to the site.
-6. After verification, panel 2 unlocks. Panel 3 unlocks when an arm version is selected.
-7. The user selects `V2` or `V3`, fills the version-specific measurement set, and clicks `Generate` in panel 3.
+6. After verification, panel 2 unlocks. Panel 3 unlocks when a device is selected.
+7. The user selects `Version 2`, `Version 3 Beta`, or `UnLimbited Phoenix`, fills the device-specific parameter set, and clicks `Generate` in panel 3.
 8. While generation is active, panel 2 locks again so in-flight parameters cannot drift.
 9. The finished ZIP is available from the browser, and optionally by email once SES production access is enabled.
 
@@ -130,14 +135,16 @@ Current live panel headings:
 
 Current left-column actions:
 
-- `Lets Go !` is always green
-- `Reset` is grey
-- `End Session` is red
+- `Verify Session` is green until the session is verified, then it is greyed out
+- `End Session` is red and disabled until a verified session exists
 
 Current live measurements behavior:
 
-- No arm version is preselected on first load; the user must choose one to continue
-- `Version2 Alfie Edition` and `Version 3 BETA` load different parameter schemas
+- No device is preselected on first load; the user must choose one to continue
+- The selector is split into:
+  - `Arm`
+  - `Hand`
+- `Version 2`, `Version 3 Beta`, and `UnLimbited Phoenix` load different parameter schemas
 - `V2` currently presents:
   - `Arm Selection`
   - `Hand Measurements (mm)`
@@ -147,6 +154,10 @@ Current live measurements behavior:
   - `Arm Selection`
   - `Hand Measurements (mm)`
   - `Arm Measurements (mm)`
+- `Phoenix` currently presents:
+  - `Hand Selection`
+  - `Hand Measurements (%)`
+- `V3` hand measurements use a 1x4 desktop layout
 
 Current live typography:
 
@@ -194,7 +205,6 @@ For detailed theming and DOM constraints, see [`UI_CUSTOMIZATION.md`](/Users/dro
 - The current arm label is intentionally `Forarm Length` because that is what was requested in the live UI
 - User-facing copy now prefers `generate/generating` instead of `render/rendering`
 - Session/draft helpers now include:
-  - `Reset`, which clears request details and selected device data but keeps the session
   - `End Session`, which clears the `arminator_client_id` cookie and the verified server-side session
 
 ## Retention note
@@ -243,11 +253,11 @@ Terraform variables currently live in [`infra/aws/terraform.tfvars`](/Users/droo
 
 The current live renderer image tag is:
 
-- `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260321-110002-retention-email-fix`
+- `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260321-174441-phoenix-device`
 
 The current renderer deployment version env is:
 
-- `20260321-110002-retention-email-fix`
+- `20260321-174441-phoenix-device`
 
 When local `docker` is unavailable, the renderer image can be rebuilt on another Docker-capable machine and then rolled out by updating [`infra/aws/terraform.tfvars`](/Users/droo/arminator/infra/aws/terraform.tfvars) and applying the ECS task definition/Lambda changes.
 

@@ -109,14 +109,14 @@ textarea {
 }
 
 .ghost-link {
-  color: var(--ink-soft);
+  color: var(--ink);
   text-decoration: none;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
 .ghost-link-accent {
-  color: var(--peach);
+  color: var(--error);
 }
 
 .content {
@@ -282,6 +282,29 @@ h2 {
   text-align-last: left;
 }
 
+#parameter-sections[data-arm-version="v3"] .section-hand-measurements-mm {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+}
+
+#parameter-sections[data-arm-version="phoenix"] .section-hand-selection,
+#parameter-sections[data-arm-version="phoenix"] .section-hand-measurements {
+  grid-template-columns: 1fr;
+  align-content: center;
+}
+
+#parameter-sections[data-arm-version="phoenix"] .section-hand-selection .field-group,
+#parameter-sections[data-arm-version="phoenix"] .section-hand-measurements .field-group {
+  width: min(100%, 18rem);
+  justify-self: center;
+}
+
+#parameter-sections[data-arm-version="phoenix"] .section-hand-selection select,
+#parameter-sections[data-arm-version="phoenix"] .section-hand-measurements input {
+  text-align: left;
+  text-align-last: left;
+}
+
 .section-card {
   margin: 0;
   padding: 0.8rem;
@@ -299,6 +322,25 @@ h2 {
 .version-selector-card {
   display: grid;
   gap: 0.75rem;
+}
+
+.device-selector-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(12rem, 0.9fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.device-selector-group {
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  min-width: 0;
+}
+
+.device-selector-group legend {
+  padding: 0 0.45rem;
 }
 
 .version-selector-copy {
@@ -319,8 +361,16 @@ h2 {
   font-style: italic;
 }
 
+.instruction-break {
+  display: block;
+}
+
 .version-radio-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.version-radio-list-single {
+  grid-template-columns: 1fr;
 }
 
 .measurement-empty-state {
@@ -465,9 +515,13 @@ button:focus,
 }
 
 .action-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.6rem;
+}
+
+.action-row > * {
+  width: 100%;
 }
 
 button,
@@ -542,6 +596,7 @@ button:disabled {
 }
 
 #end-session-button {
+  text-transform: none;
   background: var(--error);
   border-color: var(--error);
   color: #fff;
@@ -550,6 +605,10 @@ button:disabled {
 #end-session-button:hover:not(:disabled) {
   background: #8d3732;
   border-color: #8d3732;
+}
+
+#generate-button {
+  text-transform: none;
 }
 
 .status-state-label {
@@ -680,10 +739,13 @@ button:disabled {
 }
 
 .status-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 0.6rem;
   margin-top: 0.75rem;
+}
+
+.status-actions > * {
+  width: 100%;
 }
 
 .radio-list {
@@ -777,6 +839,7 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .device-selector-grid,
   .version-radio-list {
     grid-template-columns: 1fr;
   }
@@ -803,8 +866,11 @@ button:disabled {
   }
 
   .status-actions {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .action-row {
+    grid-template-columns: 1fr;
   }
 
   button,

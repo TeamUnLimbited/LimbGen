@@ -433,6 +433,11 @@ data "archive_file" "lambda" {
     content  = file("${path.module}/../../UnLimbited_Arm_V2.2.scad")
     filename = "UnLimbited_Arm_V2.2.scad"
   }
+
+  source {
+    content  = file("${path.module}/../../UnLimbitedPhoenix.scad")
+    filename = "UnLimbitedPhoenix.scad"
+  }
 }
 
 resource "aws_lambda_function" "api" {

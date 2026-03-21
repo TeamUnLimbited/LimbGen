@@ -13,9 +13,9 @@ For architecture diagrams and the AWS component map, read [`docs/architecture/AR
 - GitHub repo remote: `git@github.com:TeamUnLimbited/LimbGen.git`
 - AWS account: `236209347845`
 - Region: `eu-west-2`
-- Current renderer deployment version env: `20260321-110002-retention-email-fix`
-- Current renderer image: `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260321-110002-retention-email-fix`
-- Current renderer task definition revision: `arminator-renderer:18`
+- Current renderer deployment version env: `20260321-174441-phoenix-device`
+- Current renderer image: `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260321-174441-phoenix-device`
+- Current renderer task definition revision: `arminator-renderer:19`
 - Current renderer rollback target: [`RENDERER_TRIXIE_ROLLOUT.md`](/Users/droo/arminator/RENDERER_TRIXIE_ROLLOUT.md)
 
 ## Current AWS resources
@@ -57,16 +57,18 @@ Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/
   - `1 - Request Details`
   - `2 - Select Device and Set Parameters`
   - `3 - Generate`
-- The middle column now starts with a required arm-version selector:
-  - `Version2 Alfie Edition`
-  - `Version 3 BETA`
-- No version is preselected on first load; the version radio choice is required before generation
-- `V2` and `V3` use different measurement schemas parsed from different SCAD files
+- The middle column now starts with a required device selector split into:
+  - `Arm`
+    - `Version 2`
+    - `Version 3 Beta`
+  - `Hand`
+    - `UnLimbited Phoenix`
+- No device is preselected on first load; the radio choice is required before generation
+- `Version 2`, `Version 3 Beta`, and `UnLimbited Phoenix` use different SCAD-derived schemas
 - The UI no longer shows a generated filename bullet list
 - The request flow is now explicitly gated left-to-right:
-  - `Lets Go !` is the verification/session button
+  - `Verify Session` is the verification/session button
   - `Generate` in panel 3 is the only action that starts a render job
-  - `Reset` clears the current form and selected device but keeps the session
   - `End Session` clears the cookie-backed verified session and requires a new magic link
 - User-facing copy now consistently prefers `generate/generating`
 - All jobs generate the full kit; no part picker is exposed
@@ -141,10 +143,10 @@ The frontend no longer sends `client_id` explicitly in normal API calls. Lambda 
 
 Current session controls:
 
-- `Reset`: clears request details, selected arm version, and parameter values while keeping the session active
-- `End Session`: clears the `arminator_client_id` cookie and deletes the verified session record server-side
+- `Verify Session`: active only when not already verified; once verified it greys out
+- `End Session`: clears the `arminator_client_id` cookie and deletes the verified session record server-side; it stays disabled until a verified session exists
 
-Clearing browser cookies for `limbgen.teamunlimbited.org` also resets the verified-session state. Draft form values still live separately in local storage unless `Reset`, `End Session`, or job start clears them.
+Clearing browser cookies for `limbgen.teamunlimbited.org` also resets the verified-session state. Draft form values still live separately in local storage unless `End Session` or job start clears them.
 
 ## Open issues / known blockers
 
@@ -226,10 +228,10 @@ That spelling is intentional because it was explicitly requested for the public 
 - completion emails now state that the generator download link is valid for 7 days
 - completed/failed/canceled job records are scrubbed of requester details and verified email after terminal completion
 - verified-session drafts are cleared when a job starts, and used verification-token records are stripped of email/draft data
-- `Lets Go !`, `Reset`, and `End Session` were added as explicit session controls in panel 1
+- `Verify Session` and `End Session` are now the explicit session controls in panel 1
 - `Instructions` links now sit beside the version names instead of making the version labels themselves hyperlinks
-- `Reset` now also clears the saved server-side draft through `/api/session/draft`
 - `End Session` now clears both the browser cookie and the server-side session through `/api/session/end`
+- `UnLimbited Phoenix` is now a third selectable device under the `Hand` group and is normalized to the same five public render phases
 
 ## Recent email delivery finding
 
@@ -244,14 +246,18 @@ That spelling is intentional because it was explicitly requested for the public 
 - section legends such as `Arm Version`, `Arm Selection`, `Hand Measurements (mm)` are bold
 - field values inside controls are regular weight
 - panel 2 and panel 3 start greyed out until the session is verified and a device is selected
-- `Lets Go !` is always green
-- `Reset` is grey
-- `End Session` is red
+- `Verify Session` is green until the session is verified, then disabled
+- `End Session` is red and disabled until a verified session exists
 - version help links and the `Read here if your not sure.` link are italic
+- the top-right nav now only shows `Contact` and `Donate`
 - `V2` top cards are currently stacked full-width:
   - `Arm Selection`
   - `Hand Measurements (mm)`
 - `V3` arm selection is centered within its card, with the dropdown text left-aligned
+- `V3` hand measurements now use a 1x4 desktop row
+- `Phoenix` currently shows:
+  - `Hand Selection`
+  - `Hand Measurements (%)`
 
 ## Deploy procedure
 

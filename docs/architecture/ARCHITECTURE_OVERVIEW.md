@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document is the high-level map of the current production limb generator. It explains what each AWS component does, how the request and generation flows work, and where the version-aware arm configuration fits into the system.
+This document is the high-level map of the current production limb generator. It explains what each AWS component does, how the request and generation flows work, and where the device-aware configuration fits into the system.
 
 For the current operational snapshot, live deployment notes, and runtime caveats, also read:
 
@@ -22,20 +22,20 @@ The production deployment is a low-idle AWS design built around:
 - `CloudWatch Logs` for Lambda and renderer observability
 - `ECR` for the renderer image
 
-The app currently supports two arm versions:
+The app currently supports three device options:
 
-- `Version2 Alfie Edition`
-- `Version 3 BETA`
+- `Version 2`
+- `Version 3 Beta`
+- `UnLimbited Phoenix`
 
-The frontend requests a version-specific schema from the API, and the backend uses the selected version to build the correct render parameters while keeping the public render phase names stable.
+The frontend requests a device-specific schema from the API, and the backend uses the selected option to build the correct render parameters while keeping the public render phase names stable.
 
 The live UI now uses a verification-first gated flow:
 
-- `Lets Go !` establishes or reuses the verified session
+- `Verify Session` establishes or reuses the verified session
 - panel 2 unlocks after verification
 - panel 3 unlocks after a device is selected
 - `Generate` in panel 3 starts the render
-- `Reset` clears form/device state but keeps the session
 - `End Session` clears the browser cookie and deletes the verified session
 
 Current canonical render order:
@@ -66,11 +66,11 @@ Current intended ZIP retention: `7 days`
 
 - Entrypoint: [`lambda_api.py`](/Users/droo/arminator/lambda_api.py)
 - Main AWS backend logic: [`arminator_aws_backend.py`](/Users/droo/arminator/arminator_aws_backend.py)
-- Shared parameter/version logic: [`arminator_common.py`](/Users/droo/arminator/arminator_common.py)
+- Shared parameter/device logic: [`arminator_common.py`](/Users/droo/arminator/arminator_common.py)
 
 Responsibilities:
 
-- return version-aware measurement schemas
+- return device-aware parameter schemas
 - manage email verification and verified sessions
 - clear verified sessions and saved drafts when explicitly requested from the frontend
 - create jobs and start renderer tasks in ECS
@@ -292,20 +292,26 @@ flowchart TB
     TaskDef --> SES
 ```
 
-### 5. Versioned form logic
+### 5. Device form logic
 
 ![Versioned form logic](./diagrams/05-versioned-form-logic.jpg)
 
 ```mermaid
 flowchart LR
-    Version["Arm Version selection"] --> V2["V2\nVersion2 Alfie Edition"]
-    Version --> V3["V3\nVersion 3 BETA"]
+    Device["Device selection"] --> Arm["Arm"]
+    Device --> Hand["Hand"]
+
+    Arm --> V2["Version 2"]
+    Arm --> V3["Version 3 Beta"]
+    Hand --> P["UnLimbited Phoenix"]
 
     V2 --> V2Schema["Parse UnLimbited_Arm_V2.2.scad"]
     V3 --> V3Schema["Parse UnLimbited Arm V3.00.scad"]
+    P --> PSchema["Parse UnLimbitedPhoenix.scad"]
 
     V2Schema --> Fields["Frontend form sections"]
     V3Schema --> Fields
+    PSchema --> Fields
 
     Fields --> Validate["Lambda validation"]
     Validate --> Render["Renderer command build"]

@@ -224,10 +224,10 @@ function setIdleStatusCopy() {
   const selectedArmVersion = getSelectedArmVersion();
   if (!sessionState.verified) {
     jobStatus.textContent = sessionState.verification_pending ? "Check your email to unlock the flow" : "Waiting for verification";
-    jobMessage.textContent = "Complete request details, click Lets Go !, and verify your email to unlock the generator.";
+    jobMessage.textContent = "Complete request details, click Verify Session, and verify your email to unlock the generator.";
   } else if (!selectedArmVersion) {
     jobStatus.textContent = "Select a device to continue";
-    jobMessage.textContent = "Choose Version2 Alfie Edition or Version 3 BETA to unlock generation.";
+    jobMessage.textContent = "Choose Version 2, Version 3 Beta, or UnLimbited Phoenix to unlock generation.";
   } else {
     jobStatus.textContent = "Ready to generate";
     jobMessage.textContent = "Review the selected device settings, then click Generate.";
@@ -249,11 +249,11 @@ function syncUiState() {
   setPanelControlsDisabled(parametersPanel, !parametersEnabled);
   setPanelDisabled(statusPanel, !statusEnabled);
 
+  submitButton.disabled = verified || generationActive;
   generateButton.classList.toggle("hidden", !statusEnabled || generationActive);
   generateButton.disabled = !canGenerate;
   cancelButton.classList.toggle("hidden", !generationActive);
-  resetButton.disabled = generationActive;
-  endSessionButton.disabled = generationActive;
+  endSessionButton.disabled = generationActive || !verified;
 
   setIdleStatusCopy();
 }
@@ -512,7 +512,7 @@ function applyCountryDefault() {
 function setVerificationUi() {
   verificationStrip.classList.toggle("verified", sessionState.verified);
   verificationStrip.classList.toggle("pending", !sessionState.verified && Boolean(sessionState.verification_pending));
-  submitButton.textContent = "Lets Go !";
+  submitButton.textContent = "Verify Session";
   if (sessionState.verified) {
     verificationTitle.textContent = "Email verified";
     verificationDetail.textContent = sessionState.notify_completed
@@ -523,7 +523,7 @@ function setVerificationUi() {
     verificationDetail.textContent = `A sign-in link was sent to ${sessionState.email}. Open it to unlock device selection and generation.`;
   } else {
     verificationTitle.textContent = "Email verification required before part generation.";
-    verificationDetail.textContent = "Complete request details, click Lets Go !, then verify your email to continue.";
+    verificationDetail.textContent = "Complete request details, click Verify Session, then verify your email to continue.";
   }
   syncUiState();
 }
@@ -819,7 +819,7 @@ function renderForm(config) {
   if (!config.selected_arm_version) {
     const emptyState = document.createElement("p");
     emptyState.className = "panel-copy measurement-empty-state";
-    emptyState.textContent = "Choose Version2 Alfie Edition or Version 3 BETA above to load the correct measurements.";
+    emptyState.textContent = "Choose Version 2, Version 3 Beta, or UnLimbited Phoenix above to load the correct parameters.";
     parameterSections.appendChild(emptyState);
   }
 
@@ -1305,15 +1305,6 @@ endSessionButton.addEventListener("click", async () => {
     showSubmissionNote(data.message || "Session ended. Verify by magic link again to continue.");
   } catch (error) {
     showSubmissionNote(error.message, false);
-  } finally {
-    syncUiState();
-  }
-});
-
-resetButton.addEventListener("click", async () => {
-  resetButton.disabled = true;
-  try {
-    await resetFormState(sessionState.verified ? "Form reset. Session is still active." : "Form reset.");
   } finally {
     syncUiState();
   }

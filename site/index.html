@@ -20,9 +20,8 @@
           </span>
         </a>
         <nav class="topnav" aria-label="Related links">
-          <a class="ghost-link" href="https://www.teamunlimbited.org/design" target="_blank" rel="noreferrer">Design</a>
           <a class="ghost-link" href="https://www.teamunlimbited.org/contact" target="_blank" rel="noreferrer">Contact</a>
-          <a class="ghost-link ghost-link-accent" href="https://www.teamunlimbited.org/" target="_blank" rel="noreferrer">Main site</a>
+          <a class="ghost-link ghost-link-accent" href="https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=A64GWM82ZV3EE&source=url&ssrt=1774116787498" target="_blank" rel="noreferrer">Donate</a>
         </nav>
       </header>
 
@@ -37,13 +36,12 @@
             </p>
             <div class="verification-strip" id="verification-strip">
               <strong id="verification-title">Email verification required before part generation.</strong>
-              <span id="verification-detail">Complete request details, click Lets Go !, then verify your email to continue.</span>
+              <span id="verification-detail">Complete request details, click Verify Session, then verify your email to continue.</span>
             </div>
             <div class="feedback neutral hidden" id="submission-note"></div>
             <div class="panel-sections" id="request-sections"></div>
             <div class="actions action-row">
-              <button type="button" id="submit-button">Lets Go !</button>
-              <button type="button" id="reset-button">Reset</button>
+              <button type="button" id="submit-button">Verify Session</button>
               <button type="button" class="secondary-button" id="end-session-button">End Session</button>
             </div>
           </section>
@@ -53,17 +51,31 @@
               <h2>2 - Select Device and Set Parameters</h2>
             </div>
             <fieldset class="section-card version-selector-card" id="arm-version-panel">
-              <legend>Arm Version</legend>
-              <p class="panel-copy version-selector-copy">Select a version to generate <a href="https://www.teamunlimbited.org/whichversion" target="_blank" rel="noreferrer">Read here if your not sure.</a></p>
-              <div class="radio-list version-radio-list">
-                <label class="radio-option">
-                  <input type="radio" name="arm_version" value="v2" required>
-                  <span>Version2 Alfie Edition <a href="https://www.teamunlimbited.org/version2" target="_blank" rel="noreferrer">Instructions</a></span>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="arm_version" value="v3" required>
-                  <span>Version 3 BETA <a href="https://www.teamunlimbited.org/version3" target="_blank" rel="noreferrer">Instructions</a></span>
-                </label>
+              <legend>Device Selection</legend>
+              <p class="panel-copy version-selector-copy">Select a device to generate <a href="https://www.teamunlimbited.org/whichversion" target="_blank" rel="noreferrer">Read here if your not sure.</a></p>
+              <div class="device-selector-grid">
+                <fieldset class="device-selector-group">
+                  <legend>Arm</legend>
+                  <div class="radio-list version-radio-list">
+                    <label class="radio-option">
+                      <input type="radio" name="arm_version" value="v2" required>
+                      <span>Version 2 <span class="instruction-break"><a href="https://www.teamunlimbited.org/version2" target="_blank" rel="noreferrer">Instructions</a></span></span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" name="arm_version" value="v3" required>
+                      <span>Version 3 Beta <a href="https://www.teamunlimbited.org/version3" target="_blank" rel="noreferrer">Instructions</a></span>
+                    </label>
+                  </div>
+                </fieldset>
+                <fieldset class="device-selector-group">
+                  <legend>Hand</legend>
+                  <div class="radio-list version-radio-list version-radio-list-single">
+                    <label class="radio-option">
+                      <input type="radio" name="arm_version" value="phoenix" required>
+                      <span>UnLimbited Phoenix <a href="https://www.teamunlimbited.org/phoenixunlimbited" target="_blank" rel="noreferrer">Instructions</a></span>
+                    </label>
+                  </div>
+                </fieldset>
               </div>
             </fieldset>
             <div class="panel-sections" id="parameter-sections"></div>
