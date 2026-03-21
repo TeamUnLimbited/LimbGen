@@ -194,3 +194,11 @@ Recommended handoff reading order:
 2. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
 3. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
 4. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
+
+## License
+
+This repository is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License:
+
+- [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+See [`LICENSE`](/Users/droo/arminator/LICENSE) for the repository license notice.
