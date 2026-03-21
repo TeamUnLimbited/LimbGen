@@ -13,10 +13,10 @@ For architecture diagrams and the AWS component map, read [`docs/architecture/AR
 - GitHub repo remote: `git@github.com:TeamUnLimbited/LimbGen.git`
 - AWS account: `236209347845`
 - Region: `eu-west-2`
-- Current deployment version: `20260320-2259-renderer-trixie`
-- Current renderer image: `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260320-2259-renderer-trixie`
-- Current renderer task definition revision: `arminator-renderer:15`
-- Current renderer rollback target: `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260320-211316-admin-report`
+- Current renderer deployment version env: `20260321-110002-retention-email-fix`
+- Current renderer image: `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260321-110002-retention-email-fix`
+- Current renderer task definition revision: `arminator-renderer:18`
+- Current renderer rollback target: [`RENDERER_TRIXIE_ROLLOUT.md`](/Users/droo/arminator/RENDERER_TRIXIE_ROLLOUT.md)
 
 ## Current AWS resources
 
@@ -27,6 +27,7 @@ For architecture diagrams and the AWS component map, read [`docs/architecture/AR
 - DynamoDB jobs table: `arminator-jobs`
 - ECS cluster: `arminator-cluster`
 - Renderer task definition: `arminator-renderer`
+- There is no always-on ECS service; Lambda starts one-off Fargate tasks with `RunTask`
 
 Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/infra/aws/outputs.tf).
 
@@ -62,7 +63,11 @@ Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/
 - No version is preselected on first load; the version radio choice is required before generation
 - `V2` and `V3` use different measurement schemas parsed from different SCAD files
 - The UI no longer shows a generated filename bullet list
-- The main CTA is now `Generate Arm`
+- The request flow is now explicitly gated left-to-right:
+  - `Lets Go !` is the verification/session button
+  - `Generate` in panel 3 is the only action that starts a render job
+  - `Reset` clears the current form and selected device but keeps the session
+  - `End Session` clears the cookie-backed verified session and requires a new magic link
 - User-facing copy now consistently prefers `generate/generating`
 - All jobs generate the full kit; no part picker is exposed
 - Every submission creates a fresh render
@@ -72,6 +77,9 @@ Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/
   - in local storage
   - through the email-verification flow
   - when reconnecting to an active job
+- Generation payload capture is fresh at click time:
+  - verification drafts are only restore convenience
+  - request details and arm parameters are re-read from the live form when `Generate` is clicked
 - The renderer is still single-worker:
   - one generation runs at a time
   - queued jobs now show queue position and ETA in the UI
@@ -131,7 +139,12 @@ The public site now uses an `HttpOnly` cookie:
 
 The frontend no longer sends `client_id` explicitly in normal API calls. Lambda reads or mints the browser identity from the cookie.
 
-Clearing browser cookies for `limbgen.teamunlimbited.org` resets the verified-session state. Draft form values still live separately in local storage.
+Current session controls:
+
+- `Reset`: clears request details, selected arm version, and parameter values while keeping the session active
+- `End Session`: clears the `arminator_client_id` cookie and deletes the verified session record server-side
+
+Clearing browser cookies for `limbgen.teamunlimbited.org` also resets the verified-session state. Draft form values still live separately in local storage unless `Reset`, `End Session`, or job start clears them.
 
 ## Open issues / known blockers
 
@@ -205,7 +218,6 @@ That spelling is intentional because it was explicitly requested for the public 
 - verification restore bug fixed so slider values are restored correctly after magic-link verification
 - verification strip now turns green when the link has been sent
 - completion emails now include requester data, recipient/project metadata, parameters used, and donation link
-- UI/frontend copy now says `Generate Arm`
 - worker/status copy now says `generate/generating` after renderer image rebuild
 - completion now also sends a structured internal report email to `drew@teamunlimbited.org`
 - the internal structured report now uses the subject `ARM GENERATION`
@@ -214,6 +226,10 @@ That spelling is intentional because it was explicitly requested for the public 
 - completion emails now state that the generator download link is valid for 7 days
 - completed/failed/canceled job records are scrubbed of requester details and verified email after terminal completion
 - verified-session drafts are cleared when a job starts, and used verification-token records are stripped of email/draft data
+- `Lets Go !`, `Reset`, and `End Session` were added as explicit session controls in panel 1
+- `Instructions` links now sit beside the version names instead of making the version labels themselves hyperlinks
+- `Reset` now also clears the saved server-side draft through `/api/session/draft`
+- `End Session` now clears both the browser cookie and the server-side session through `/api/session/end`
 
 ## Recent email delivery finding
 
@@ -227,6 +243,11 @@ That spelling is intentional because it was explicitly requested for the public 
 - main UI/body text uses `Open Sans`
 - section legends such as `Arm Version`, `Arm Selection`, `Hand Measurements (mm)` are bold
 - field values inside controls are regular weight
+- panel 2 and panel 3 start greyed out until the session is verified and a device is selected
+- `Lets Go !` is always green
+- `Reset` is grey
+- `End Session` is red
+- version help links and the `Read here if your not sure.` link are italic
 - `V2` top cards are currently stacked full-width:
   - `Arm Selection`
   - `Hand Measurements (mm)`
@@ -285,8 +306,10 @@ The currently deployed renderer image is the dedicated `trixie` OpenSCAD build. 
 
 ## Retention
 
-- Artifact retention is controlled by Terraform variable `artifact_retention_days`
-- Current default in [`infra/aws/variables.tf`](/Users/droo/arminator/infra/aws/variables.tf) is `3`
+- App-level job retention and completion-email wording currently say download links are valid for `7 days`
+- The live S3 artifacts bucket lifecycle in AWS currently expires artifacts after `3 days` as of `2026-03-21`
+- Terraform default in [`infra/aws/variables.tf`](/Users/droo/arminator/infra/aws/variables.tf) is still `3`
+- This mismatch is currently unresolved and should be reconciled before depending on the public 7-day wording
 
 ## Handoff warning
 

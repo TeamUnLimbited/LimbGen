@@ -4,10 +4,11 @@ This document consolidates the current state of the Team UnLimbited limb generat
 
 ## Purpose
 
-The project turns [`UnLimbited Arm V3.00.scad`](/Users/droo/arminator/UnLimbited%20Arm%20V3.00.scad) into a public workflow where a user:
+The project turns private local UnLimbited arm OpenSCAD sources into a public workflow where a user:
 
 - enters request details and measurements
 - verifies their email with a magic link
+- chooses `Version2 Alfie Edition` or `Version 3 BETA`
 - starts a fresh generation job
 - tracks progress while parts are generated
 - downloads a ZIP of STL files
@@ -38,17 +39,25 @@ Terraform for the live stack is under [`infra/aws/`](/Users/droo/arminator/infra
   - left: request details
   - middle: arm selection and measurements
   - right: generation status
+- The request flow is now verification-first and left-to-right:
+  - `Lets Go !` establishes or reuses the verified session
+  - panel 2 unlocks after verification
+  - panel 3 unlocks after a device is selected
+  - `Generate` in panel 3 is the only action that actually starts a render
 - The middle column now requires an arm-version choice before generation:
   - `Version2 Alfie Edition`
   - `Version 3 BETA`
 - No arm version is preselected on first load
 - Full-kit generation only. Users no longer pick individual parts.
-- The primary CTA is `Generate Arm`.
+- Panel 1 now also includes:
+  - `Reset`, which clears request/device fields but keeps the session
+  - `End Session`, which clears the cookie-backed verified session and requires a new magic link
 - User-facing copy prefers `generate/generating`, not `render/rendering`.
 - Every submission creates a fresh generation. Completed-job cache reuse is disabled.
 - Duplicate in-flight work is still avoided by reconnecting to an already-active job for the same browser/session.
 - Verified state is browser-cookie based via `arminator_client_id`, not source-IP based.
 - Form values are preserved locally and restored through the verification flow.
+- Generation payload capture intentionally uses the current live form values at click time, not a stale saved draft from the earlier verification step.
 
 ## Current generation order
 
@@ -74,6 +83,7 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
   - `3 - Generate`
 - Panel headings use `Poppins`; main UI/body text uses `Open Sans`
 - Section legends are bold while field/control values are regular weight
+- `Lets Go !` is always green, `Reset` is grey, and `End Session` is red
 - Country is a dropdown, auto-defaulted from the CloudFront country header when available
 - Recipient flow includes:
   - recipient sex
@@ -83,6 +93,8 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
   - `Project Summary`
   - `Other Summary`
 - `V2` and `V3` use different SCAD-derived parameter schemas and labels
+- Version help links sit beside the version names as italic `Instructions` links
+- The `Read here if your not sure.` helper link is italic
 - `V2` currently presents:
   - `Arm Selection`
   - `Hand Measurements (mm)`
@@ -115,6 +127,8 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
 - Saving a draft is not enough; the UI must restore slider positions themselves, not only the numeric display values.
 - A previous bug restored the read-only value fields but then overwrote them from default slider values.
 - The current fix is in [`site/app.js`](/Users/droo/arminator/site/app.js): draft reapplication sets the slider positions and then syncs the display from the sliders.
+- Drafts are now convenience only. The authoritative generation payload comes from the current live form when `Generate` is clicked.
+- `Reset` now clears both the local draft and the saved server-side session draft.
 
 ### Session identity
 
@@ -125,6 +139,9 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
   - `HttpOnly`
   - `Secure`
   - `SameSite=Lax`
+- There are now explicit session controls:
+  - `Reset` keeps the session but clears form/device state
+  - `End Session` clears the cookie and deletes the verified session record server-side
 
 ### AWS deployment
 
@@ -137,6 +154,7 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
 - Generated ZIP/job retention now defaults to 7 days.
 - Completion emails now explicitly state that the generator download link is valid for 7 days.
 - A renderer-side bug on `2026-03-21` caused internal generation reports to fail with `NameError: name 'json' is not defined`; that requires a renderer image rebuild to fix in production.
+- As of `2026-03-21`, the live S3 artifact bucket lifecycle is still `3 days`, so the public 7-day wording and the actual bucket expiration are not yet aligned.
 
 ### Rendering performance
 

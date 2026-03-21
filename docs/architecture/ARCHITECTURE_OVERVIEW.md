@@ -29,6 +29,15 @@ The app currently supports two arm versions:
 
 The frontend requests a version-specific schema from the API, and the backend uses the selected version to build the correct render parameters while keeping the public render phase names stable.
 
+The live UI now uses a verification-first gated flow:
+
+- `Lets Go !` establishes or reuses the verified session
+- panel 2 unlocks after verification
+- panel 3 unlocks after a device is selected
+- `Generate` in panel 3 starts the render
+- `Reset` clears form/device state but keeps the session
+- `End Session` clears the browser cookie and deletes the verified session
+
 Current canonical render order:
 
 1. `Pins`
@@ -63,6 +72,7 @@ Responsibilities:
 
 - return version-aware measurement schemas
 - manage email verification and verified sessions
+- clear verified sessions and saved drafts when explicitly requested from the frontend
 - create jobs and start renderer tasks in ECS
 - expose job status, cancel, and download APIs
 - create presigned download URLs for artifact access

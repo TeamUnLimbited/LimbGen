@@ -1,24 +1,22 @@
 # UnLimbited Assistive Device Generator
 
-This repository turns a local `UnLimbited Arm V3.00.scad` source file into a public web workflow where a user:
+This repository turns private local UnLimbited arm OpenSCAD sources into a public web workflow where a user:
 
 - enters request details and arm measurements
 - verifies their email with a magic link
+- selects `Version2 Alfie Edition` or `Version 3 BETA`
 - starts a fresh part generation job
 - watches per-part progress
 - downloads a ZIP of generated STL files
 
 The production deployment is live at [https://limbgen.teamunlimbited.org](https://limbgen.teamunlimbited.org).
 
-## OpenSCAD source file
+## OpenSCAD source files
 
-No `.scad` files are committed to this repository. The real `UnLimbited Arm V3.00.scad` file is intentionally not committed to GitHub and must remain local.
+No real `.scad` files are committed to this repository. The private arm source files used for `v2` and `v3` rendering must remain local and must not be synced to GitHub.
 
 - The repository includes a placeholder at [`UnLimbited Arm V3.00.scad.example`](/Users/droo/arminator/UnLimbited%20Arm%20V3.00.scad.example)
-- To run the project locally, place the real file at:
-  - `UnLimbited Arm V3.00.scad`
-
-Without that local file, render and deployment paths that package the OpenSCAD source will not work.
+- Without the real local source files, render and deployment paths that package OpenSCAD sources will not work.
 
 For a fresh clone checklist, see [`SETUP_ON_NEW_MACHINE.md`](/Users/droo/arminator/SETUP_ON_NEW_MACHINE.md).
 
@@ -73,7 +71,11 @@ For the architecture diagrams and component map, see [`docs/architecture/ARCHITE
   - `Version2 Alfie Edition`
   - `Version 3 BETA`
 - Loads version-specific measurement fields and validation rules from the matching SCAD source
-- Uses `Generate Arm` as the primary UI action label
+- Uses a verification-first left-to-right flow:
+  - `Lets Go !` establishes or reuses the verified session
+  - `Generate` in panel 3 starts the actual job
+  - `Reset` clears request details and device parameters but keeps the current session active
+  - `End Session` clears the cookie-backed verified session and requires a fresh magic link
 - Generates parts in this order:
   1. `Pins`
   2. `Cuff Jig`
@@ -99,17 +101,18 @@ For the architecture diagrams and component map, see [`docs/architecture/ARCHITE
 ## Current request flow
 
 1. User lands on the form immediately; there is no start screen.
-2. User enters:
+2. Panel `1 - Request Details` is active; panels `2 - Select Device and Set Parameters` and `3 - Generate` start greyed out.
+3. User enters:
    - requester details
    - country
    - purpose
    - recipient or project metadata
-   - arm measurements
-3. If unverified, clicking `Generate` opens the email-verification modal.
-4. The user receives a magic link, verifies, and returns to the site.
-5. The UI marks the session verified and the generate button becomes ready.
-6. The user starts part generation.
-7. The finished ZIP is available from the browser, and optionally by email once SES production access is enabled.
+4. Clicking `Lets Go !` opens the email-verification modal if the browser session is not yet verified.
+5. The user receives a magic link, verifies, and returns to the site.
+6. After verification, panel 2 unlocks. Panel 3 unlocks when an arm version is selected.
+7. The user selects `V2` or `V3`, fills the version-specific measurement set, and clicks `Generate` in panel 3.
+8. While generation is active, panel 2 locks again so in-flight parameters cannot drift.
+9. The finished ZIP is available from the browser, and optionally by email once SES production access is enabled.
 
 ## Current UI layout
 
@@ -124,6 +127,12 @@ Current live panel headings:
 - `1 - Request Details`
 - `2 - Select Device and Set Parameters`
 - `3 - Generate`
+
+Current left-column actions:
+
+- `Lets Go !` is always green
+- `Reset` is grey
+- `End Session` is red
 
 Current live measurements behavior:
 
@@ -145,6 +154,7 @@ Current live typography:
 - main UI/body text uses `Open Sans`
 - box titles/legends are bold
 - values inside inputs/selects/radios are regular weight
+- version help links such as `Read here if your not sure.` and `Instructions` are italic
 
 Key frontend files:
 
@@ -177,11 +187,21 @@ For detailed theming and DOM constraints, see [`UI_CUSTOMIZATION.md`](/Users/dro
 - Full-kit only generation
 - Fresh render per submission
 - Active-job reconnect still exists to prevent duplicate in-flight work
+- Generation always uses the live current form values at the instant `Generate` is clicked, not a stale saved verification draft
 - ZIP names encode key measurements, for example:
   - `RK64HL141WW45WH35FL150BC198.zip`
 - The UI no longer lists generated STL filenames in the status card
 - The current arm label is intentionally `Forarm Length` because that is what was requested in the live UI
 - User-facing copy now prefers `generate/generating` instead of `render/rendering`
+- Session/draft helpers now include:
+  - `Reset`, which clears request details and selected device data but keeps the session
+  - `End Session`, which clears the `arminator_client_id` cookie and the verified server-side session
+
+## Retention note
+
+- App-level job retention and completion-email copy currently say artifact links are valid for `7 days`
+- The live S3 artifacts bucket lifecycle in AWS is currently set to `3 days` as of `2026-03-21`
+- This mismatch should be reconciled before relying on the public retention wording
 
 ## Email status
 
@@ -221,13 +241,13 @@ Then invalidate CloudFront when static assets change:
 
 Terraform variables currently live in [`infra/aws/terraform.tfvars`](/Users/droo/arminator/infra/aws/terraform.tfvars).
 
-The current production renderer image tag is:
+The current live renderer image tag is:
 
-- `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260320-2259-renderer-trixie`
+- `236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:20260321-110002-retention-email-fix`
 
-The current deployment version is:
+The current renderer deployment version env is:
 
-- `20260320-2259-renderer-trixie`
+- `20260321-110002-retention-email-fix`
 
 When local `docker` is unavailable, the renderer image can be rebuilt on another Docker-capable machine and then rolled out by updating [`infra/aws/terraform.tfvars`](/Users/droo/arminator/infra/aws/terraform.tfvars) and applying the ECS task definition/Lambda changes.
 
