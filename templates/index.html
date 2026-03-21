@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UnLimbited Arm Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">OpenSCAD Render Tool</p>
+        <h1>Generate a printable UnLimbited Arm kit</h1>
+        <p class="lede">
+          Enter the prosthetic measurements, choose the side and the parts you want,
+          then the server will render STL files and package them into one ZIP archive.
+        </p>
+      </section>
+
+      <section class="panel">
+        <form id="generator-form">
+          <div class="feedback neutral hidden" id="submission-note"></div>
+
+          <div class="parts-grid">
+            <div class="field-group wide">
+              <label>Parts to generate</label>
+              <div class="checkbox-grid">
+                {% for part in part_options %}
+                <label class="checkbox-card">
+                  <input type="checkbox" name="parts" value="{{ part }}" checked>
+                  <span>{{ part }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            {% for section_name, fields in sections.items() %}
+            <fieldset class="section-card">
+              <legend>{{ section_name }}</legend>
+              {% for field in fields %}
+              <div class="field-group">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+
+                {% if field.kind == "select" %}
+                <select id="{{ field.name }}" name="{{ field.name }}">
+                  {% for option in field.options %}
+                  <option value="{{ option }}" {% if option == field.default %}selected{% endif %}>{{ option }}</option>
+                  {% endfor %}
+                </select>
+                {% else %}
+                <div class="range-field">
+                  <input
+                    id="{{ field.name }}"
+                    class="range-value"
+                    name="{{ field.name }}"
+                    type="number"
+                    value="{{ field.default }}"
+                    step="{{ field.step }}"
+                    {% if field.min is defined %}min="{{ field.min }}"{% endif %}
+                    {% if field.max is defined %}max="{{ field.max }}"{% endif %}
+                    readonly
+                    required
+                  >
+                  {% if field.min is defined and field.max is defined %}
+                  <input
+                    class="range-slider"
+                    type="range"
+                    value="{{ field.default }}"
+                    min="{{ field.min }}"
+                    max="{{ field.max }}"
+                    step="{{ field.step }}"
+                    data-target="{{ field.name }}"
+                    aria-label="{{ field.label }}"
+                  >
+                  {% endif %}
+                </div>
+                {% endif %}
+
+                {% if field.note %}
+                <p class="note">{{ field.note }}</p>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </fieldset>
+            {% endfor %}
+          </div>
+
+          <div class="actions">
+            <button type="submit" id="submit-button">Generate STL ZIP</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel hidden" id="job-panel">
+        <div class="job-header">
+          <div>
+            <p class="eyebrow">Render Progress</p>
+            <h2 id="job-status">Queued</h2>
+          </div>
+          <span id="progress-value">0%</span>
+        </div>
+
+        <div class="progress-track" id="progress-track" aria-hidden="true">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+
+        <p class="job-message" id="job-message">Waiting to start.</p>
+        <p class="job-detail hidden" id="job-detail"></p>
+        <p class="job-meta hidden" id="job-meta"></p>
+        <ul class="output-list hidden" id="output-list"></ul>
+        <div class="feedback hidden" id="error-box"></div>
+        <button class="secondary-button hidden" id="cancel-button" type="button">Cancel Current Job</button>
+        <a class="download-link hidden" id="download-link" href="#">Download ZIP</a>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

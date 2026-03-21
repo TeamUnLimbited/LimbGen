@@ -1,0 +1,6 @@
+region         = "eu-west-2"
+project_name   = "arminator"
+domain_name    = "limbgen.teamunlimbited.org"
+enable_https   = false
+renderer_image = ""
+deployment_version = "dev"

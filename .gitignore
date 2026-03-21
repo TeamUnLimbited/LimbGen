@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+.venv/
+instance/jobs/
+.DS_Store
+*.swp
+*.swo
+
+# Keep the real proprietary OpenSCAD source local only.
+UnLimbited Arm V3.00.scad
+
+# Local Terraform state and plans.
+infra/aws/.terraform/
+infra/aws/terraform.tfstate
+infra/aws/terraform.tfstate.backup
+infra/aws/tfplan*
+infra/aws/build/
+
+# Local deployment overrides.
+infra/aws/terraform.tfvars
+
+# Benchmarking and local helper scratch stay out of GitHub.
+benchmarks/
+.awscheck/
