@@ -512,8 +512,6 @@ function applyCountryDefault() {
 function setVerificationUi() {
   verificationStrip.classList.toggle("verified", sessionState.verified);
   verificationStrip.classList.toggle("pending", !sessionState.verified && Boolean(sessionState.verification_pending));
-  submitButton.classList.toggle("button-alert", !sessionState.verified);
-  submitButton.classList.toggle("button-ready", sessionState.verified);
   submitButton.textContent = "Lets Go !";
   if (sessionState.verified) {
     verificationTitle.textContent = "Email verified";

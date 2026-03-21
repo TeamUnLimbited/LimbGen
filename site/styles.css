@@ -503,16 +503,6 @@ button:disabled {
   border-color: var(--line-strong);
 }
 
-.button-alert {
-  background: var(--error);
-  border-color: var(--error);
-}
-
-.button-alert:hover:not(:disabled) {
-  background: #8d3732;
-  border-color: #8d3732;
-}
-
 .button-ready {
   background: var(--success);
   border-color: var(--success);
@@ -525,15 +515,35 @@ button:disabled {
 
 #submit-button {
   text-transform: none;
+  background: var(--success);
+  border-color: var(--success);
+}
+
+#submit-button:hover:not(:disabled) {
+  background: #1d5d42;
+  border-color: #1d5d42;
 }
 
 #reset-button {
   text-transform: none;
-  background: var(--error);
-  border-color: var(--error);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
 
 #reset-button:hover:not(:disabled) {
+  background: rgba(31, 53, 89, 0.08);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+#end-session-button {
+  background: var(--error);
+  border-color: var(--error);
+  color: #fff;
+}
+
+#end-session-button:hover:not(:disabled) {
   background: #8d3732;
   border-color: #8d3732;
 }
