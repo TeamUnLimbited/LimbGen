@@ -69,7 +69,7 @@ Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/
 ## Queue settings
 
 - Default max queued jobs: `8`
-- Default queue ETA slot size: `45` seconds
+- Default queue ETA slot size: `35` seconds
 - Optional env overrides:
   - `ARMINATOR_MAX_QUEUE_LENGTH`
   - `ARMINATOR_QUEUE_SLOT_ESTIMATE_SECONDS`
