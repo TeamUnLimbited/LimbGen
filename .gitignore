@@ -6,8 +6,8 @@ instance/jobs/
 *.swp
 *.swo
 
-# Keep the real proprietary OpenSCAD source local only.
-UnLimbited Arm V3.00.scad
+# Keep all OpenSCAD source local only.
+*.scad
 
 # Local Terraform state and plans.
 infra/aws/.terraform/
