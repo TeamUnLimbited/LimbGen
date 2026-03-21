@@ -248,9 +248,10 @@ Legacy files still in the repo but not in the production path:
 ## Recommended handoff reading order
 
 1. [`README.md`](/Users/droo/arminator/README.md)
-2. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
-3. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
-4. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
+2. [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md)
+3. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
+4. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
+5. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
 
 ## Current risk areas
 

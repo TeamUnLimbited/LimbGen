@@ -63,6 +63,8 @@ It now runs as a low-idle AWS stack:
 
 The Terraform for this stack is in [`infra/aws/`](/Users/droo/arminator/infra/aws).
 
+For the architecture diagrams and component map, see [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md).
+
 ## What the app does now
 
 - Always generates the full kit; users do not choose individual parts
@@ -254,9 +256,10 @@ The dedicated production renderer image definition is separate:
 Recommended handoff reading order:
 
 1. [`README.md`](/Users/droo/arminator/README.md)
-2. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
-3. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
-4. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
+2. [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md)
+3. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
+4. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
+5. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
 
 ## License
 

@@ -4,6 +4,8 @@ This file is the current operational snapshot for the live Team UnLimbited limb 
 
 For the broader design history, implementation decisions, and consolidated lessons learned, read [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md) alongside this file.
 
+For architecture diagrams and the AWS component map, read [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md).
+
 ## Live service
 
 - Public URL: [https://limbgen.teamunlimbited.org](https://limbgen.teamunlimbited.org)
