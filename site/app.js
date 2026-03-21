@@ -181,6 +181,25 @@ function formatHeartbeat(updatedAt) {
   return ageSeconds <= 1 ? "Active just now" : `Last activity ${ageSeconds}s ago`;
 }
 
+function formatWaitDuration(seconds) {
+  const roundedSeconds = Math.max(0, Math.round(seconds || 0));
+  if (roundedSeconds < 60) {
+    return `${roundedSeconds} second${roundedSeconds === 1 ? "" : "s"}`;
+  }
+
+  const minutes = Math.round(roundedSeconds / 60);
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (!remainingMinutes) {
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  return `${hours} hour${hours === 1 ? "" : "s"} ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
+}
+
 function resolveProgressVisual(state) {
   if (state.current_part && PROGRESS_VISUALS[state.current_part]) {
     return PROGRESS_VISUALS[state.current_part];
@@ -595,7 +614,18 @@ function setJobUi(state) {
     ? `${state.completed_parts || 0}/${state.total_parts || 0} complete`
     : `${state.progress || 0}%`;
   jobStatus.textContent = state.status.charAt(0).toUpperCase() + state.status.slice(1);
-  if (isActiveState(state)) {
+  if (state.status === "queued") {
+    const queueParts = [];
+    if (state.queue_position) {
+      queueParts.push(`You are ${state.queue_position} in the queue`);
+    }
+    if (state.estimated_wait_seconds) {
+      queueParts.push(`Estimated wait time is ${formatWaitDuration(state.estimated_wait_seconds)}`);
+    }
+    jobMessage.textContent = queueParts.length
+      ? `${queueParts.join(". ")}.`
+      : "Now Spinning Up Part Generation Engine, Hold on to your Filament";
+  } else if (isActiveState(state)) {
     jobMessage.textContent = "Now Spinning Up Part Generation Engine, Hold on to your Filament";
   } else {
     jobMessage.textContent = state.message || "";
@@ -618,15 +648,16 @@ function setJobUi(state) {
   if (elapsed) {
     metaParts.push(elapsed);
   }
-  if (isActiveState(state)) {
+  if (state.status === "queued") {
+    if (state.status_line) {
+      metaParts.push(state.status_line);
+    }
+  } else if (isActiveState(state)) {
     const heartbeat = formatHeartbeat(state.updated_at);
     if (heartbeat) {
       metaParts.push(heartbeat);
     }
   } else {
-    if (state.status === "queued" && state.queue_position) {
-      metaParts.push(`Queue position ${state.queue_position}`);
-    }
     if (state.status_line) {
       metaParts.push(state.status_line);
     }
@@ -813,6 +844,21 @@ async function submitJob(payload) {
       if (response.status === 409 && data.job_id) {
         showSubmissionNote("Part generation is already active for this browser. Reconnected to the active job.");
         startPolling(data.job_id);
+        return;
+      }
+
+      if (response.status === 429) {
+        setFormLocked(false);
+        setActiveJobId(null);
+        showSubmissionNote(data.error || "I'm really busy come back in a bit !", false);
+        setJobUi({
+          status: "failed",
+          progress: 100,
+          message: data.error || "I'm really busy come back in a bit !",
+          completed_parts: 0,
+          total_parts: 0,
+          output_files: [],
+        });
         return;
       }
 

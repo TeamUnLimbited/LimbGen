@@ -47,6 +47,9 @@ TERMINAL_STATUSES = {"completed", "failed", "canceled"}
 DISPATCH_LOCK_JOB_ID = "__dispatch_lock__"
 DISPATCH_LOCK_TTL_SECONDS = 60
 STARTING_RECOVERY_SECONDS = 90
+MAX_QUEUE_LENGTH = max(1, int(os.environ.get("ARMINATOR_MAX_QUEUE_LENGTH", "8")))
+QUEUE_SLOT_ESTIMATE_SECONDS = max(15, int(os.environ.get("ARMINATOR_QUEUE_SLOT_ESTIMATE_SECONDS", "45")))
+QUEUE_FULL_MESSAGE = "I'm really busy come back in a bit !"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SESSION_PREFIX = "session#"
 VERIFY_PREFIX = "verify#"
@@ -261,6 +264,24 @@ def sort_jobs(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return sorted(items, key=lambda item: (float(item.get("created_at", 0)), item["job_id"]))
 
 
+def queue_metrics(job: Dict[str, Any]) -> Tuple[int, int, Optional[int]]:
+    status = job.get("status")
+    if status not in {"queued", "starting"}:
+        return 0, 0, None
+    if status == "starting":
+        return 0, 0, 0
+
+    queued = sort_jobs(scan_all(Attr("status").eq("queued")))
+    job_ids = [item["job_id"] for item in queued]
+    if job["job_id"] not in job_ids:
+        return 0, 0, None
+
+    position = job_ids.index(job["job_id"]) + 1
+    active_count = len(scan_all(Attr("status").is_in(["starting", "running"])))
+    slots_ahead = active_count + max(0, position - 1)
+    return position, slots_ahead, slots_ahead * QUEUE_SLOT_ESTIMATE_SECONDS
+
+
 def pick_active_by_hash(request_hash: str) -> Optional[Dict[str, Any]]:
     matches = scan_all(
         Attr("request_hash").eq(request_hash) & Attr("status").is_in(list(ACTIVE_STATUSES))
@@ -289,17 +310,12 @@ def pick_active_for_email(email: str) -> Optional[Dict[str, Any]]:
 
 
 def queue_position(job: Dict[str, Any]) -> int:
-    status = job.get("status")
-    if status not in {"queued", "starting"}:
-        return 0
-    queued = sort_jobs(scan_all(Attr("status").eq("queued")))
-    if status == "starting":
-        return 0
-    job_ids = [item["job_id"] for item in queued]
-    return job_ids.index(job["job_id"]) + 1 if job["job_id"] in job_ids else 0
+    position, _, _ = queue_metrics(job)
+    return position
 
 
 def job_to_payload(job: Dict[str, Any], cached: Optional[bool] = None, api_prefix: str = "/api") -> Dict[str, Any]:
+    position, slots_ahead, estimated_wait_seconds = queue_metrics(job)
     payload = {
         "job_id": job["job_id"],
         "status": job.get("status", "queued"),
@@ -312,7 +328,9 @@ def job_to_payload(job: Dict[str, Any], cached: Optional[bool] = None, api_prefi
         "current_part_index": int(job.get("current_part_index", 0)),
         "total_parts": int(job.get("total_parts", 0)),
         "completed_parts": int(job.get("completed_parts", 0)),
-        "queue_position": queue_position(job),
+        "queue_position": position,
+        "queue_slots_ahead": slots_ahead,
+        "estimated_wait_seconds": estimated_wait_seconds,
         "current_step": job.get("current_step", "queued"),
         "status_line": job.get("status_line", ""),
         "started_at": job.get("started_at"),
@@ -786,6 +804,10 @@ def create_job(payload: Dict[str, Any], client_id: str, api_prefix: str = "/api"
         active_payload["active_job_exists"] = True
         active_payload["error"] = "A generation job is already active for this verified email."
         return 409, active_payload
+
+    queued_job_count = len(scan_all(Attr("status").eq("queued")))
+    if queued_job_count >= MAX_QUEUE_LENGTH:
+        return 429, {"error": QUEUE_FULL_MESSAGE}
 
     now = time.time()
     job_id = uuid.uuid4().hex

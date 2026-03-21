@@ -61,6 +61,18 @@ Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/
   - in local storage
   - through the email-verification flow
   - when reconnecting to an active job
+- The renderer is still single-worker:
+  - one generation runs at a time
+  - queued jobs now show queue position and ETA in the UI
+  - new submissions are rejected once the queued backlog reaches the configured cap
+
+## Queue settings
+
+- Default max queued jobs: `8`
+- Default queue ETA slot size: `45` seconds
+- Optional env overrides:
+  - `ARMINATOR_MAX_QUEUE_LENGTH`
+  - `ARMINATOR_QUEUE_SLOT_ESTIMATE_SECONDS`
 
 ## Current part generation order
 
