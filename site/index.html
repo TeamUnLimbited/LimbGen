@@ -28,7 +28,7 @@
 
       <main class="content">
         <form id="generator-form" class="workspace">
-          <section class="workspace-panel details-panel">
+          <section class="workspace-panel details-panel" id="details-panel">
             <div class="panel-head">
               <h2 id="page-title">1 - Request Details</h2>
             </div>
@@ -37,16 +37,16 @@
             </p>
             <div class="verification-strip" id="verification-strip">
               <strong id="verification-title">Email verification required before part generation.</strong>
-              <span id="verification-detail">Set your measurements, then verify your email when you click Generate Arm.</span>
+              <span id="verification-detail">Complete request details, click Lets Go !, then verify your email to continue.</span>
             </div>
             <div class="feedback neutral hidden" id="submission-note"></div>
             <div class="panel-sections" id="request-sections"></div>
             <div class="actions">
-              <button type="submit" id="submit-button">Generate Arm</button>
+              <button type="button" id="submit-button">Lets Go !</button>
             </div>
           </section>
 
-          <section class="workspace-panel parameters-panel">
+          <section class="workspace-panel parameters-panel" id="parameters-panel">
             <div class="panel-head">
               <h2>2 - Select Device and Set Parameters</h2>
             </div>
@@ -67,9 +67,10 @@
             <div class="panel-sections" id="parameter-sections"></div>
           </section>
 
-          <aside class="workspace-panel status-panel">
+          <aside class="workspace-panel status-panel" id="status-panel">
             <div class="panel-head">
-              <h2 id="job-status">3 - Generate</h2>
+              <h2>3 - Generate</h2>
+              <p class="panel-copy status-state-label" id="job-status">Waiting for verification</p>
             </div>
             <section class="status-card">
               <div class="progress-summary">
@@ -89,6 +90,7 @@
               <ul class="part-list hidden" id="part-list"></ul>
               <div class="feedback hidden" id="error-box"></div>
               <div class="status-actions">
+                <button class="hidden" id="generate-button" type="button">Generate</button>
                 <button class="secondary-button hidden" id="cancel-button" type="button">Cancel current job</button>
                 <a class="download-link hidden" id="download-link" href="#">Download ZIP</a>
               </div>
@@ -105,7 +107,7 @@
           <p class="eyebrow">Verify Email</p>
           <h2 id="verification-modal-title">Send a magic link</h2>
         </div>
-        <p class="modal-copy">We need to verify your email before starting part generation. After you click the link we email you, come back here and click Generate Arm.</p>
+        <p class="modal-copy">We need to verify your email before starting part generation. After you click the link we email you, come back here, select the device, and generate the parts.</p>
         <form id="verification-form" class="generator-form">
           <div class="field-group">
             <label for="verification-email">Email Address</label>

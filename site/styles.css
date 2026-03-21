@@ -143,6 +143,29 @@ textarea {
   padding: 0.95rem;
 }
 
+.workspace-panel.is-disabled {
+  background: #f4f6fa;
+  border-color: #d9e0ea;
+}
+
+.workspace-panel.is-disabled .section-card,
+.workspace-panel.is-disabled .status-card {
+  background: #eef2f7;
+  border-color: #d7dfeb;
+}
+
+.workspace-panel.is-disabled .panel-head,
+.workspace-panel.is-disabled .panel-copy,
+.workspace-panel.is-disabled .job-message,
+.workspace-panel.is-disabled .job-detail,
+.workspace-panel.is-disabled .job-meta,
+.workspace-panel.is-disabled legend,
+.workspace-panel.is-disabled label,
+.workspace-panel.is-disabled .progress-summary,
+.workspace-panel.is-disabled .progress-visual-caption {
+  opacity: 0.6;
+}
+
 .details-panel {
   display: grid;
   align-content: start;
@@ -470,6 +493,16 @@ button:disabled {
   border-color: var(--line-strong);
 }
 
+.button-alert {
+  background: var(--error);
+  border-color: var(--error);
+}
+
+.button-alert:hover:not(:disabled) {
+  background: #8d3732;
+  border-color: #8d3732;
+}
+
 .button-ready {
   background: var(--success);
   border-color: var(--success);
@@ -478,6 +511,15 @@ button:disabled {
 .button-ready:hover:not(:disabled) {
   background: #1d5d42;
   border-color: #1d5d42;
+}
+
+#submit-button {
+  text-transform: none;
+}
+
+.status-state-label {
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .progress-summary {

@@ -4,6 +4,8 @@ const submissionNote = document.getElementById("submission-note");
 const requestSections = document.getElementById("request-sections");
 const parameterSections = document.getElementById("parameter-sections");
 const armVersionPanel = document.getElementById("arm-version-panel");
+const parametersPanel = document.getElementById("parameters-panel");
+const statusPanel = document.getElementById("status-panel");
 const progressTrack = document.getElementById("progress-track");
 const progressFill = document.getElementById("progress-fill");
 const progressValue = document.getElementById("progress-value");
@@ -16,6 +18,7 @@ const jobDetail = document.getElementById("job-detail");
 const jobMeta = document.getElementById("job-meta");
 const partList = document.getElementById("part-list");
 const errorBox = document.getElementById("error-box");
+const generateButton = document.getElementById("generate-button");
 const cancelButton = document.getElementById("cancel-button");
 const downloadLink = document.getElementById("download-link");
 const pageTitle = document.getElementById("page-title");
@@ -99,6 +102,7 @@ let sessionState = {
   verification_pending: false,
 };
 let latestConfig = null;
+let currentJobState = null;
 
 function sectionClassName(sectionName) {
   return `section-${String(sectionName || "")
@@ -169,6 +173,85 @@ function isTerminalState(state) {
 
 function isActiveState(state) {
   return ["queued", "starting", "running"].includes(state.status);
+}
+
+function controlIsVisible(control) {
+  return !control.closest(".hidden");
+}
+
+function sectionValidity(section, report = false) {
+  if (!section) {
+    return true;
+  }
+
+  for (const control of section.querySelectorAll("input, select, textarea")) {
+    if (control.disabled || !controlIsVisible(control)) {
+      continue;
+    }
+    if (!control.checkValidity()) {
+      if (report) {
+        control.reportValidity();
+      }
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function hasActiveGeneration() {
+  return Boolean(currentJobState && isActiveState(currentJobState));
+}
+
+function setPanelDisabled(panel, disabled) {
+  panel.classList.toggle("is-disabled", disabled);
+  panel.setAttribute("aria-disabled", disabled ? "true" : "false");
+}
+
+function setPanelControlsDisabled(panel, disabled) {
+  for (const control of panel.querySelectorAll("input, select, textarea")) {
+    control.disabled = disabled;
+  }
+}
+
+function setIdleStatusCopy() {
+  if (hasActiveGeneration() || (currentJobState && isTerminalState(currentJobState))) {
+    return;
+  }
+
+  const selectedArmVersion = getSelectedArmVersion();
+  if (!sessionState.verified) {
+    jobStatus.textContent = sessionState.verification_pending ? "Check your email to unlock the flow" : "Waiting for verification";
+    jobMessage.textContent = "Complete request details, click Lets Go !, and verify your email to unlock the generator.";
+  } else if (!selectedArmVersion) {
+    jobStatus.textContent = "Select a device to continue";
+    jobMessage.textContent = "Choose Version2 Alfie Edition or Version 3 BETA to unlock generation.";
+  } else {
+    jobStatus.textContent = "Ready to generate";
+    jobMessage.textContent = "Review the selected device settings, then click Generate.";
+  }
+}
+
+function syncUiState() {
+  const verified = Boolean(sessionState.verified);
+  const selectedArmVersion = getSelectedArmVersion();
+  const generationActive = hasActiveGeneration();
+  const parametersEnabled = verified && !generationActive;
+  const statusEnabled = generationActive || (verified && Boolean(selectedArmVersion));
+  const canGenerate = statusEnabled
+    && !generationActive
+    && sectionValidity(requestSections)
+    && sectionValidity(parameterSections);
+
+  setPanelDisabled(parametersPanel, !parametersEnabled);
+  setPanelControlsDisabled(parametersPanel, !parametersEnabled);
+  setPanelDisabled(statusPanel, !statusEnabled);
+
+  generateButton.classList.toggle("hidden", !statusEnabled || generationActive);
+  generateButton.disabled = !canGenerate;
+  cancelButton.classList.toggle("hidden", !generationActive);
+
+  setIdleStatusCopy();
 }
 
 function showSubmissionNote(message, neutral = true) {
@@ -292,15 +375,6 @@ function renderPartList(state) {
   partList.classList.remove("hidden");
 }
 
-function setFormLocked(locked) {
-  submitButton.disabled = locked;
-  for (const element of form.querySelectorAll("input, select, textarea")) {
-    element.disabled = locked;
-  }
-  cancelButton.classList.toggle("hidden", !locked);
-  cancelButton.disabled = false;
-}
-
 function syncSliderValue(slider) {
   const target = document.getElementById(slider.dataset.target);
   if (!target) {
@@ -352,22 +426,22 @@ function applyCountryDefault() {
 function setVerificationUi() {
   verificationStrip.classList.toggle("verified", sessionState.verified);
   verificationStrip.classList.toggle("pending", !sessionState.verified && Boolean(sessionState.verification_pending));
+  submitButton.classList.toggle("button-alert", !sessionState.verified);
   submitButton.classList.toggle("button-ready", sessionState.verified);
+  submitButton.textContent = "Lets Go !";
   if (sessionState.verified) {
-    submitButton.textContent = "Generate Arm";
     verificationTitle.textContent = "Email verified";
     verificationDetail.textContent = sessionState.notify_completed
-      ? `Verified as ${sessionState.email}. Completed files will also be emailed to you.`
-      : `Verified as ${sessionState.email}.`;
+      ? `Verified as ${sessionState.email}. You can now select a device and completed files will also be emailed to you.`
+      : `Verified as ${sessionState.email}. You can now select a device and generate parts.`;
   } else if (sessionState.verification_pending) {
-    submitButton.textContent = "Check Email To Verify";
     verificationTitle.textContent = "Verification link sent";
-    verificationDetail.textContent = `A sign-in link was sent to ${sessionState.email}. Open it, then come back here and click Generate Arm.`;
+    verificationDetail.textContent = `A sign-in link was sent to ${sessionState.email}. Open it to unlock device selection and generation.`;
   } else {
-    submitButton.textContent = "Verify Email To Generate Arm";
     verificationTitle.textContent = "Email verification required before part generation.";
-    verificationDetail.textContent = "Set your measurements, then verify your email when you click Generate Arm.";
+    verificationDetail.textContent = "Complete request details, click Lets Go !, then verify your email to continue.";
   }
+  syncUiState();
 }
 
 function fieldIsVisible(fieldName) {
@@ -668,9 +742,11 @@ function renderForm(config) {
   wireSliders();
   updateConditionalFields();
   applyCountryDefault();
+  syncUiState();
 }
 
 function setJobUi(state) {
+  currentJobState = state;
   setProgressVisual(state);
   const hasActivePart = state.status === "running" && state.current_part;
   const showIndeterminate = state.status === "starting" || state.status === "queued" || Boolean(hasActivePart);
@@ -755,10 +831,8 @@ function setJobUi(state) {
 
   if (isActiveState(state)) {
     setActiveJobId(state.job_id);
-    setFormLocked(true);
     showSubmissionNote("Part generation is already active for this browser. Reloading the page will reconnect to it.");
   } else {
-    setFormLocked(false);
     if (isTerminalState(state)) {
       setActiveJobId(null);
       if (state.cached) {
@@ -770,6 +844,8 @@ function setJobUi(state) {
       }
     }
   }
+
+  syncUiState();
 }
 
 function collectPayload() {
@@ -828,7 +904,6 @@ async function pollJob(jobId) {
       window.clearInterval(pollHandle);
       pollHandle = null;
     }
-    setFormLocked(false);
     setJobUi({
       status: "failed",
       progress: 100,
@@ -908,7 +983,6 @@ async function submitJob(payload) {
         setVerificationUi();
         openVerificationModal();
         showSubmissionNote("Verify your email before part generation can start.");
-        setFormLocked(false);
         return;
       }
 
@@ -919,7 +993,6 @@ async function submitJob(payload) {
       }
 
       if (response.status === 429) {
-        setFormLocked(false);
         setActiveJobId(null);
         showSubmissionNote(data.error || "I'm really busy come back in a bit !", false);
         setJobUi({
@@ -933,7 +1006,6 @@ async function submitJob(payload) {
         return;
       }
 
-      setFormLocked(false);
       setJobUi({
         status: "failed",
         progress: 100,
@@ -962,7 +1034,6 @@ async function submitJob(payload) {
       setActiveJobId(null);
     }
   } catch (error) {
-    setFormLocked(false);
     setJobUi({
       status: "failed",
       progress: 100,
@@ -1000,7 +1071,7 @@ async function handleVerificationCallback() {
         await restoreDraft(data.draft);
         saveDraft(data.draft);
       }
-      showSubmissionNote(data.message || "Email verified. You can now generate the arm.");
+      showSubmissionNote(data.message || "Email verified. You can now select a device and generate the parts.");
     }
   } catch (error) {
     showSubmissionNote(error.message, false);
@@ -1015,6 +1086,7 @@ form.addEventListener("input", (event) => {
   if (event.target instanceof HTMLElement && event.target.closest(".section-card")) {
     updateConditionalFields();
     saveDraft(collectPayload());
+    syncUiState();
   }
 });
 
@@ -1022,6 +1094,7 @@ form.addEventListener("change", (event) => {
   if (event.target instanceof HTMLElement && event.target.closest(".section-card")) {
     updateConditionalFields();
     saveDraft(collectPayload());
+    syncUiState();
   }
 });
 
@@ -1033,6 +1106,7 @@ for (const input of armVersionInputs) {
       applyDraft(preservedDraft);
       saveDraft(collectPayload());
       showSubmissionNote("");
+      syncUiState();
     } catch (error) {
       errorBox.textContent = error.message;
       errorBox.classList.remove("hidden");
@@ -1040,16 +1114,32 @@ for (const input of armVersionInputs) {
   });
 }
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const payload = collectPayload();
+submitButton.addEventListener("click", () => {
+  if (!sectionValidity(requestSections, true)) {
+    return;
+  }
 
+  saveDraft(collectPayload());
+  if (sessionState.verified) {
+    showSubmissionNote("Email already verified. Select a device and generate when you are ready.");
+    syncUiState();
+    return;
+  }
+
+  openVerificationModal();
+});
+
+generateButton.addEventListener("click", async () => {
   if (!sessionState.verified) {
     openVerificationModal();
     return;
   }
+  if (!sectionValidity(requestSections, true) || !sectionValidity(parameterSections, true)) {
+    syncUiState();
+    return;
+  }
 
-  await submitJob(payload);
+  await submitJob(collectPayload());
 });
 
 verificationForm.addEventListener("submit", async (event) => {
@@ -1085,7 +1175,7 @@ verificationForm.addEventListener("submit", async (event) => {
     };
     setVerificationUi();
     closeVerificationModal();
-    showSubmissionNote(data.message || "Verification link sent. Open the email, click the link, then come back here and click Generate Arm.");
+    showSubmissionNote(data.message || "Verification link sent. Open the email, click the link, then come back here to select the device and generate.");
   } catch (error) {
     verificationError.textContent = error.message;
     verificationError.classList.remove("hidden");
@@ -1146,6 +1236,8 @@ window.addEventListener("load", async () => {
     });
     return;
   }
+
+  syncUiState();
 
   const jobId = getActiveJobId();
   if (!jobId) {

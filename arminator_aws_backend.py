@@ -421,12 +421,12 @@ def request_verification_link(
     text_body = (
         "Verify your email to start generating your UnLimbited assistive device kit.\n\n"
         f"Open this link in your browser:\n{verification_url}\n\n"
-        "After verification, return to the form and click Generate Arm."
+        "After verification, return to the form, select the device, and generate the parts."
     )
     html_body = (
         "<p>Verify your email to start generating your UnLimbited assistive device kit.</p>"
         f"<p><a href=\"{verification_url}\">Verify email and return to the generator</a></p>"
-        "<p>After verification, return to the form and click Generate Arm.</p>"
+        "<p>After verification, return to the form, select the device, and generate the parts.</p>"
     )
 
     try:
