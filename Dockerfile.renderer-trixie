@@ -1,0 +1,33 @@
+FROM openscad/openscad:trixie
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    JOBS_DIR=/app/instance/jobs \
+    OPENSCAD_BIN=/usr/local/bin/openscad-manifold \
+    OPENSCAD_USE_XVFB=0 \
+    MAX_RENDER_WORKERS=1 \
+    VIRTUAL_ENV=/opt/venv \
+    PATH=/opt/venv/bin:$PATH
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python-is-python3 \
+        python3-venv \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN python3 -m venv "${VIRTUAL_ENV}" \
+    && pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p /app/instance/jobs \
+    && printf '%s\n' '#!/usr/bin/env bash' 'exec openscad --backend Manifold "$@"' > /usr/local/bin/openscad-manifold \
+    && chmod +x /usr/local/bin/openscad-manifold
+
+CMD ["python", "renderer_job.py"]

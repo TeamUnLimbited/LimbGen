@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+.git/
+.DS_Store
+instance/jobs/
+benchmarks/artifacts/
+benchmarks/artifacts_remote/
+benchmarks/results/
+benchmarks/results_official/
+infra/aws/.terraform/
+infra/aws/terraform.tfstate
+infra/aws/terraform.tfstate.backup
