@@ -22,6 +22,22 @@ Without that local file, render and deployment paths that package the OpenSCAD s
 
 For a fresh clone checklist, see [`SETUP_ON_NEW_MACHINE.md`](/Users/droo/arminator/SETUP_ON_NEW_MACHINE.md).
 
+## Repo hygiene
+
+The repository history has been scrubbed to remove all `.scad` files, and `.scad` files are now ignored going forward.
+
+Future sync safety is enforced by:
+
+- [`scripts/check_repo_hygiene.sh`](/Users/droo/arminator/scripts/check_repo_hygiene.sh)
+- [repo-hygiene.yml](/Users/droo/arminator/.github/workflows/repo-hygiene.yml)
+
+That check blocks:
+
+- tracked `.scad` files
+- `.scad` files in reachable git history
+- local-only Terraform state and override files
+- obvious secret and private-environment markers
+
 ## Renderer image
 
 The built renderer container image is not stored in Git. This repository tracks the image definition and rollout inputs instead:

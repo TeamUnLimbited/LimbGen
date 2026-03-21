@@ -43,6 +43,8 @@ Optional but useful:
    - fill in the real values needed for deployment
 4. Configure AWS credentials locally so Terraform, ECR, Lambda, ECS, and S3 access work.
 5. If pushing to GitHub, configure git identity and GitHub SSH access.
+6. Before pushing changes, run:
+   - `bash scripts/check_repo_hygiene.sh`
 
 ## Renderer image
 
