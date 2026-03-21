@@ -30,7 +30,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Source Sans 3", "Avenir Next", "Trebuchet MS", sans-serif;
+  font-family: "Open Sans", "Trebuchet MS", sans-serif;
 }
 
 a,
@@ -42,7 +42,7 @@ textarea {
 }
 
 .page-shell {
-  width: min(1660px, calc(100vw - 2rem));
+  width: min(1780px, calc(100vw - 2rem));
   margin: 0 auto;
   padding: 0.75rem 0 1.25rem;
 }
@@ -125,7 +125,7 @@ textarea {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(340px, 1.275fr) minmax(320px, 0.75fr) minmax(380px, 1.275fr);
+  grid-template-columns: minmax(280px, 0.95fr) minmax(520px, 1.65fr) minmax(300px, 0.95fr);
   gap: 0.75rem;
   align-items: start;
 }
@@ -203,6 +203,10 @@ h2 {
   line-height: 1.08;
 }
 
+.panel-head h2 {
+  font-family: "Poppins", "Open Sans", sans-serif;
+}
+
 .panel-sections,
 .generator-form {
   display: grid;
@@ -217,6 +221,44 @@ h2 {
   grid-template-columns: 1fr;
 }
 
+#parameter-sections[data-arm-version="v2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+#parameter-sections[data-arm-version="v2"] .section-arm-selection,
+#parameter-sections[data-arm-version="v2"] .section-hand-measurements-mm {
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr;
+  align-content: center;
+}
+
+#parameter-sections[data-arm-version="v2"] .section-arm-selection .field-group,
+#parameter-sections[data-arm-version="v2"] .section-hand-measurements-mm .field-group {
+  width: min(100%, 22rem);
+  justify-self: center;
+}
+
+#parameter-sections[data-arm-version="v2"] .section-arm-selection select {
+  text-align: left;
+  text-align-last: left;
+}
+
+#parameter-sections[data-arm-version="v3"] .section-arm-selection {
+  grid-template-columns: 1fr;
+  align-content: center;
+}
+
+#parameter-sections[data-arm-version="v3"] .section-arm-selection .field-group {
+  width: min(100%, 18rem);
+  justify-self: center;
+}
+
+#parameter-sections[data-arm-version="v3"] .section-arm-selection select {
+  text-align: left;
+  text-align-last: left;
+}
+
 .section-card {
   margin: 0;
   padding: 0.8rem;
@@ -228,6 +270,47 @@ h2 {
   padding: 0 0.45rem;
   color: var(--ink);
   font-size: 1rem;
+  font-weight: 700;
+}
+
+.version-selector-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.version-selector-copy {
+  margin: 0;
+}
+
+.version-selector-copy a,
+.radio-option a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.version-radio-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.measurement-empty-state {
+  margin: 0;
+  padding: 0.2rem 0;
+  grid-column: 1 / -1;
+}
+
+.parameters-panel .section-card:not(.version-selector-card) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 0.85rem;
+  align-items: start;
+}
+
+.parameters-panel .section-card:not(.version-selector-card) legend {
+  grid-column: 1 / -1;
+}
+
+.parameters-panel .section-card:not(.version-selector-card) .field-group {
+  margin-bottom: 0;
 }
 
 .section-request-details {
@@ -250,21 +333,6 @@ h2 {
   margin-bottom: 0;
 }
 
-.section-hand-measurements-mm {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 0.85rem;
-  align-items: start;
-}
-
-.section-hand-measurements-mm legend {
-  grid-column: 1 / -1;
-}
-
-.section-hand-measurements-mm .field-group {
-  margin-bottom: 0;
-}
-
 .field-group {
   display: grid;
   gap: 0.32rem;
@@ -276,7 +344,7 @@ h2 {
 }
 
 label {
-  font-weight: 800;
+  font-weight: 400;
   font-size: 0.94rem;
 }
 
@@ -291,6 +359,7 @@ select {
   background: #fff;
   color: var(--ink);
   font-size: 0.94rem;
+  font-weight: 400;
 }
 
 textarea {
@@ -306,7 +375,7 @@ textarea {
 .range-value[readonly] {
   background: #f6f9fd;
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 400;
   cursor: default;
 }
 
@@ -555,7 +624,7 @@ button:disabled {
   border: 1px solid var(--line);
   background: #fff;
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 400;
   font-size: 0.92rem;
 }
 
@@ -627,7 +696,11 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .section-hand-measurements-mm {
+  .parameters-panel .section-card:not(.version-selector-card) {
+    grid-template-columns: 1fr;
+  }
+
+  .version-radio-list {
     grid-template-columns: 1fr;
   }
 }

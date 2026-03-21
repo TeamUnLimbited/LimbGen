@@ -3,6 +3,7 @@ const submitButton = document.getElementById("submit-button");
 const submissionNote = document.getElementById("submission-note");
 const requestSections = document.getElementById("request-sections");
 const parameterSections = document.getElementById("parameter-sections");
+const armVersionPanel = document.getElementById("arm-version-panel");
 const progressTrack = document.getElementById("progress-track");
 const progressFill = document.getElementById("progress-fill");
 const progressValue = document.getElementById("progress-value");
@@ -31,6 +32,7 @@ const verificationNotify = document.getElementById("verification-notify");
 const verificationCancel = document.getElementById("verification-cancel");
 const verificationSubmit = document.getElementById("verification-submit");
 const verificationError = document.getElementById("verification-error");
+const armVersionInputs = Array.from(document.querySelectorAll('input[name="arm_version"]'));
 
 const ACTIVE_JOB_KEY = "arminator-active-job-id";
 const DRAFT_KEY = "arminator-form-draft";
@@ -115,6 +117,25 @@ function setActiveJobId(jobId) {
 
 function getActiveJobId() {
   return window.localStorage.getItem(ACTIVE_JOB_KEY);
+}
+
+function getSelectedArmVersion() {
+  const selected = armVersionInputs.find((input) => input.checked);
+  return selected ? selected.value : "";
+}
+
+function setArmVersionSelection(armVersion) {
+  for (const input of armVersionInputs) {
+    input.checked = input.value === armVersion;
+  }
+}
+
+function optionValue(option) {
+  return typeof option === "object" && option !== null ? option.value : option;
+}
+
+function optionLabel(option) {
+  return typeof option === "object" && option !== null ? option.label : option;
 }
 
 function saveDraft(payload) {
@@ -390,18 +411,33 @@ function applyDraft(payload) {
 
   const requester = payload.requester && typeof payload.requester === "object" ? payload.requester : {};
   const parameters = payload.parameters && typeof payload.parameters === "object" ? payload.parameters : {};
+  const fieldValues = { ...requester, ...parameters };
+  if (payload.arm_version) {
+    fieldValues.arm_version = payload.arm_version;
+  }
 
-  for (const [name, value] of Object.entries({ ...requester, ...parameters })) {
+  for (const [name, value] of Object.entries(fieldValues)) {
     const inputs = form.querySelectorAll(`[name="${name}"]`);
     if (!inputs.length) {
       continue;
     }
 
     if (inputs[0].type === "radio") {
+      const hasMatchingOption = Array.from(inputs).some((input) => input.value === String(value));
+      if (!hasMatchingOption) {
+        continue;
+      }
       for (const input of inputs) {
         input.checked = input.value === String(value);
       }
       continue;
+    }
+
+    if (inputs[0].tagName === "SELECT") {
+      const hasMatchingOption = Array.from(inputs[0].options).some((option) => option.value === String(value));
+      if (!hasMatchingOption) {
+        continue;
+      }
     }
 
     for (const input of inputs) {
@@ -416,6 +452,23 @@ function applyDraft(payload) {
   }
 
   updateConditionalFields();
+}
+
+async function restoreDraft(payload) {
+  if (!payload || typeof payload !== "object") {
+    return;
+  }
+
+  const armVersion = String(payload.arm_version || "").trim().toLowerCase();
+  if (armVersion && armVersion !== getSelectedArmVersion()) {
+    setArmVersionSelection(armVersion);
+    await loadConfig(armVersion);
+  } else if (!armVersion && getSelectedArmVersion()) {
+    setArmVersionSelection("");
+    await loadConfig("");
+  }
+
+  applyDraft(payload);
 }
 
 function renderField(field) {
@@ -468,9 +521,9 @@ function renderField(field) {
     }
     for (const option of field.options) {
       const optionEl = document.createElement("option");
-      optionEl.value = option;
-      optionEl.textContent = option;
-      optionEl.selected = option === field.default;
+      optionEl.value = String(optionValue(option));
+      optionEl.textContent = optionLabel(option);
+      optionEl.selected = String(optionValue(option)) === String(field.default);
       select.appendChild(optionEl);
     }
     wrapper.appendChild(select);
@@ -582,12 +635,17 @@ function renderForm(config) {
 
   requestSections.innerHTML = "";
   parameterSections.innerHTML = "";
+  if (config.selected_arm_version) {
+    parameterSections.dataset.armVersion = config.selected_arm_version;
+  } else {
+    delete parameterSections.dataset.armVersion;
+  }
   for (const section of config.sections) {
     const fieldset = document.createElement("fieldset");
     fieldset.className = `section-card ${sectionClassName(section.name)}`;
 
     const legend = document.createElement("legend");
-    legend.textContent = section.name === "Part Selection" ? "Arm Selection" : section.name;
+    legend.textContent = section.name;
     fieldset.appendChild(legend);
 
     for (const field of section.fields) {
@@ -598,6 +656,13 @@ function renderForm(config) {
     } else {
       parameterSections.appendChild(fieldset);
     }
+  }
+
+  if (!config.selected_arm_version) {
+    const emptyState = document.createElement("p");
+    emptyState.className = "panel-copy measurement-empty-state";
+    emptyState.textContent = "Choose Version2 Alfie Edition or Version 3 BETA above to load the correct measurements.";
+    parameterSections.appendChild(emptyState);
   }
 
   wireSliders();
@@ -710,11 +775,16 @@ function setJobUi(state) {
 function collectPayload() {
   const formData = new FormData(form);
   const payload = {
+    arm_version: "",
     requester: {},
     parameters: {},
   };
 
   for (const [name, value] of formData.entries()) {
+    if (name === "arm_version") {
+      payload.arm_version = value;
+      continue;
+    }
     if (!fieldIsVisible(name)) {
       continue;
     }
@@ -780,8 +850,9 @@ function startPolling(jobId) {
   pollJob(jobId);
 }
 
-async function loadConfig() {
-  const response = await fetch("/api/config");
+async function loadConfig(armVersion = getSelectedArmVersion()) {
+  const suffix = armVersion ? `?arm_version=${encodeURIComponent(armVersion)}` : "";
+  const response = await fetch(`/api/config${suffix}`);
   if (!response.ok) {
     throw new Error("Unable to load form configuration.");
   }
@@ -798,7 +869,7 @@ async function loadSessionState() {
   setVerificationUi();
   applyCountryDefault();
   if (sessionState.draft) {
-    applyDraft(sessionState.draft);
+    await restoreDraft(sessionState.draft);
     saveDraft(sessionState.draft);
   }
 }
@@ -876,9 +947,14 @@ async function submitJob(payload) {
     }
 
     setJobUi(data);
-    if (data.requester || data.parameters) {
-      applyDraft({ requester: data.requester || {}, parameters: data.parameters || {} });
-      saveDraft({ requester: data.requester || {}, parameters: data.parameters || {} });
+    if (data.requester || data.parameters || data.arm_version) {
+      const draftPayload = {
+        arm_version: data.arm_version || getSelectedArmVersion(),
+        requester: data.requester || {},
+        parameters: data.parameters || {},
+      };
+      await restoreDraft(draftPayload);
+      saveDraft(draftPayload);
     }
     if (isActiveState(data)) {
       startPolling(data.job_id);
@@ -921,7 +997,7 @@ async function handleVerificationCallback() {
       sessionState = data;
       setVerificationUi();
       if (data.draft) {
-        applyDraft(data.draft);
+        await restoreDraft(data.draft);
         saveDraft(data.draft);
       }
       showSubmissionNote(data.message || "Email verified. You can now generate the arm.");
@@ -948,6 +1024,21 @@ form.addEventListener("change", (event) => {
     saveDraft(collectPayload());
   }
 });
+
+for (const input of armVersionInputs) {
+  input.addEventListener("change", async () => {
+    const preservedDraft = collectPayload();
+    try {
+      await loadConfig(getSelectedArmVersion());
+      applyDraft(preservedDraft);
+      saveDraft(collectPayload());
+      showSubmissionNote("");
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.classList.remove("hidden");
+    }
+  });
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1039,7 +1130,7 @@ window.addEventListener("load", async () => {
     await loadConfig();
     const localDraft = loadDraft();
     if (localDraft) {
-      applyDraft(localDraft);
+      await restoreDraft(localDraft);
     }
     await loadSessionState();
     await handleVerificationCallback();
@@ -1069,9 +1160,14 @@ window.addEventListener("load", async () => {
     }
     const state = await response.json();
     setJobUi(state);
-    if (state.requester || state.parameters) {
-      applyDraft({ requester: state.requester || {}, parameters: state.parameters || {} });
-      saveDraft({ requester: state.requester || {}, parameters: state.parameters || {} });
+    if (state.requester || state.parameters || state.arm_version) {
+      const draftPayload = {
+        arm_version: state.arm_version || getSelectedArmVersion(),
+        requester: state.requester || {},
+        parameters: state.parameters || {},
+      };
+      await restoreDraft(draftPayload);
+      saveDraft(draftPayload);
     }
     if (isActiveState(state)) {
       showSubmissionNote("Reconnected to your active part generation job.");

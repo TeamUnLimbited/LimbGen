@@ -47,8 +47,7 @@ if [[ -n "$TRACKED_FILES" ]]; then
     -e 'ghp_[A-Za-z0-9]{20,}' \
     -e 'github_pat_[A-Za-z0-9_]{20,}' \
     -e 'xox[baprs]-[A-Za-z0-9-]+' \
-    -e 'D3skpr01!' \
-    -e '192\.168\.1\.103' >/dev/null && fail "tracked secret or private-environment marker detected"
+    -e '192\.168\.[0-9]{1,3}\.[0-9]{1,3}' >/dev/null && fail "tracked secret or private-environment marker detected"
 fi
 
 echo "repo hygiene check passed"

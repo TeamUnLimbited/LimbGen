@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -21,9 +22,10 @@ from arminator_aws_backend import (
 )
 from arminator_aws_backend import _s3_client as s3_client
 from arminator_common import (
-    SCAD_FILE,
     build_archive_name,
     build_render_command,
+    build_render_parameters,
+    get_render_steps,
     make_output_filename,
 )
 
@@ -132,8 +134,12 @@ def run_openscad_with_heartbeat(command: List[str], part: str) -> None:
 
 def main() -> int:
     job = get_job()
+    arm_version = str(job.get("arm_version") or "").strip().lower()
+    if not arm_version:
+        raise RuntimeError(f"Job {JOB_ID} is missing arm_version.")
     parameters = dict(job.get("parameters", {}))
     selected_parts = list(job.get("selected_parts", []))
+    render_steps = get_render_steps(arm_version, selected_parts)
     total_parts = len(selected_parts)
     rendered_files: List[Path] = []
 
@@ -154,32 +160,36 @@ def main() -> int:
                 }
             )
 
-            for index, part in enumerate(selected_parts, start=1):
+            completed_phases = 0
+            for index, step in enumerate(render_steps, start=1):
                 check_canceled()
                 update_job(
                     {
-                        "progress": int(((index - 1) / total_parts) * 100) if total_parts else 0,
-                        "message": f"Generating {part} ({index}/{total_parts})",
-                        "current_part": part,
-                        "current_part_index": index,
+                        "progress": int((completed_phases / total_parts) * 100) if total_parts else 0,
+                        "message": f"Generating {step['status_part']} ({step['phase_index']}/{total_parts})",
+                        "current_part": step["status_part"],
+                        "current_part_index": step["phase_index"],
                         "current_step": "rendering",
-                        "status_line": f"Queued generation step started for {part}.",
+                        "status_line": f"Queued generation step started for {step['part_label']}.",
                     }
                 )
 
-                output_name = make_output_filename(index, part, str(parameters["LeftRight"]))
+                output_name = make_output_filename(index, step["part_label"], str(parameters["LeftRight"]))
                 output_path = job_dir / output_name
-                command = build_render_command(output_path, {**parameters, "Part": part})
-                run_openscad_with_heartbeat(command, part)
+                render_parameters = build_render_parameters(arm_version, parameters, step["part_label"])
+                command = build_render_command(output_path, render_parameters, arm_version)
+                run_openscad_with_heartbeat(command, step["part_label"])
                 rendered_files.append(output_path)
+                if step["phase_complete"]:
+                    completed_phases += 1
 
                 update_job(
                     {
-                        "progress": int((index / total_parts) * 100),
-                        "message": f"Generated {part} ({index}/{total_parts})",
+                        "progress": int((completed_phases / total_parts) * 100) if total_parts else 100,
+                        "message": f"Generated {step['status_part']} ({completed_phases}/{total_parts})",
                         "output_files": [path.name for path in rendered_files],
-                        "completed_parts": index,
-                        "status_line": f"Finished {part}.",
+                        "completed_parts": completed_phases,
+                        "status_line": f"Finished {step['part_label']}.",
                     }
                 )
 
@@ -197,7 +207,7 @@ def main() -> int:
             for rendered_file in rendered_files:
                 upload_file(rendered_file, f"{prefix}/{rendered_file.name}")
 
-            archive_name = build_archive_name(parameters)
+            archive_name = build_archive_name(parameters, arm_version)
             archive_path = job_dir / archive_name
             with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
                 for rendered_file in rendered_files:
@@ -221,12 +231,17 @@ def main() -> int:
                     "finished_at": time.time(),
                 }
             )
+            completed_job = get_job()
             try:
-                completed_job = get_job()
                 send_completion_email(completed_job)
+            except Exception:
+                print("Failed to send completion email.", file=sys.stderr)
+                traceback.print_exc()
+            try:
                 send_internal_generation_report(completed_job)
             except Exception:
-                pass
+                print("Failed to send internal generation report.", file=sys.stderr)
+                traceback.print_exc()
             try:
                 scrub_job_personal_data(JOB_ID)
                 clear_session_draft(str(job.get("client_id") or ""))

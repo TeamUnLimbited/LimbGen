@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import time
@@ -12,16 +13,18 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from arminator_common import (
+    ARM_VERSION_OPTIONS,
     JOB_RETENTION_HOURS,
-    PART_OPTIONS,
-    PUBLIC_FIELDS,
     VERIFIED_SESSION_TTL_SECONDS,
     VERIFICATION_TOKEN_TTL_SECONDS,
     build_request_hash,
     from_dynamodb_value,
+    get_part_labels,
+    get_public_fields,
     humanize,
     resolve_selected_parts,
     to_dynamodb_value,
+    validate_arm_version,
     validate_parameters,
     validate_requester_details,
 )
@@ -187,21 +190,25 @@ def format_utc_timestamp(timestamp: Optional[float]) -> str:
     return datetime.fromtimestamp(float(timestamp), tz=timezone.utc).isoformat()
 
 
-def form_sections() -> List[Dict[str, Any]]:
+def form_sections(arm_version: Optional[str]) -> List[Dict[str, Any]]:
     sections: Dict[str, List[Dict[str, Any]]] = {}
-    for field in PUBLIC_FIELDS:
-        sections.setdefault(field["section"], []).append(field)
+    if arm_version:
+        for field in get_public_fields(arm_version):
+            sections.setdefault(field["section"], []).append(field)
     ordered_sections = [{"name": "Request Details", "fields": REQUEST_FIELDS}]
     ordered_sections.extend({"name": section_name, "fields": fields} for section_name, fields in sections.items())
     return ordered_sections
 
 
-def frontend_config(viewer_country_code: str = "") -> Dict[str, Any]:
+def frontend_config(arm_version: Optional[str] = None, viewer_country_code: str = "") -> Dict[str, Any]:
+    resolved_arm_version = arm_version if arm_version in {option["value"] for option in ARM_VERSION_OPTIONS} else None
     return {
         "title": "Build a printable UnLimbited assistive device kit",
         "subtitle": "Measurements are captured here, then the full assistive device kit is generated on demand and zipped for download.",
-        "part_options": PART_OPTIONS,
-        "sections": form_sections(),
+        "arm_versions": ARM_VERSION_OPTIONS,
+        "selected_arm_version": resolved_arm_version,
+        "part_options": get_part_labels(resolved_arm_version) if resolved_arm_version else [],
+        "sections": form_sections(resolved_arm_version),
         "viewer_country_code": viewer_country_code,
     }
 
@@ -314,6 +321,13 @@ def queue_position(job: Dict[str, Any]) -> int:
     return position
 
 
+def parameter_fields_for_job(job: Dict[str, Any]) -> List[Dict[str, Any]]:
+    arm_version = str(job.get("arm_version") or "").strip().lower()
+    if not arm_version:
+        return []
+    return get_public_fields(arm_version)
+
+
 def job_to_payload(job: Dict[str, Any], cached: Optional[bool] = None, api_prefix: str = "/api") -> Dict[str, Any]:
     position, slots_ahead, estimated_wait_seconds = queue_metrics(job)
     payload = {
@@ -338,6 +352,7 @@ def job_to_payload(job: Dict[str, Any], cached: Optional[bool] = None, api_prefi
         "updated_at": job.get("updated_at"),
         "cached": cached if cached is not None else bool(job.get("cached", False)),
         "duplicate_of": job.get("duplicate_of"),
+        "arm_version": job.get("arm_version"),
         "requester": job.get("requester", {}),
         "parameters": job.get("parameters", {}),
     }
@@ -474,8 +489,10 @@ def send_completion_email(job: Dict[str, Any]) -> None:
     archive_name = job.get("download_name") or "generated-kit.zip"
     requester = dict(job.get("requester") or {})
     parameters = dict(job.get("parameters") or {})
+    arm_version = str(job.get("arm_version") or "").upper() or "-"
 
     requester_lines: List[str] = [
+        f"Arm Version: {arm_version}",
         f"Requester Name: {requester.get('name') or '-'}",
         f"Country: {requester.get('country') or '-'}",
         f"This Device Is For: {str(requester.get('purpose') or '-').title()}",
@@ -494,7 +511,7 @@ def send_completion_email(job: Dict[str, Any]) -> None:
 
     parameter_lines = [
         f"{field['label']}: {parameters.get(field['name'])}"
-        for field in PUBLIC_FIELDS
+        for field in parameter_fields_for_job(job)
         if field["name"] in parameters
     ]
 
@@ -506,6 +523,7 @@ def send_completion_email(job: Dict[str, Any]) -> None:
     text_body = (
         "Your UnLimbited assistive device files are ready.\n\n"
         f"Download ZIP: {download_url}\n"
+        f"This link is valid for {JOB_RETENTION_HOURS // 24} days.\n"
         f"Archive name: {archive_name}\n"
         f"Donate / say thank you: {DONATION_URL}\n\n"
         "Request details:\n"
@@ -516,6 +534,7 @@ def send_completion_email(job: Dict[str, Any]) -> None:
     html_body = (
         "<p>Your UnLimbited assistive device files are ready.</p>"
         f"<p><a href=\"{download_url}\">Download the ZIP archive</a></p>"
+        f"<p>This link is valid for <strong>{JOB_RETENTION_HOURS // 24} days</strong>.</p>"
         f"<p>Archive name: <strong>{archive_name}</strong></p>"
         "<p><strong>Request details</strong></p>"
         f"<ul>{requester_html}</ul>"
@@ -533,6 +552,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
 
     requester = dict(job.get("requester") or {})
     parameters = dict(job.get("parameters") or {})
+    arm_version = str(job.get("arm_version") or "").lower()
     started_at = job.get("started_at")
     finished_at = job.get("finished_at")
     duration_seconds = ""
@@ -544,6 +564,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         "report_type": "generation_completed",
         "job_id": job.get("job_id"),
         "status": job.get("status"),
+        "arm_version": arm_version,
         "generated_at_utc": format_utc_timestamp(time.time()),
         "started_at_utc": format_utc_timestamp(started_at),
         "finished_at_utc": format_utc_timestamp(finished_at),
@@ -561,7 +582,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         },
         "parameters": {
             field["name"]: parameters.get(field["name"])
-            for field in PUBLIC_FIELDS
+            for field in parameter_fields_for_job(job)
             if field["name"] in parameters
         },
     }
@@ -571,6 +592,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         "REPORT_TYPE: generation_completed",
         f"JOB_ID: {report_payload['job_id'] or ''}",
         f"STATUS: {report_payload['status'] or ''}",
+        f"ARM_VERSION: {report_payload['arm_version'] or ''}",
         f"GENERATED_AT_UTC: {report_payload['generated_at_utc']}",
         f"STARTED_AT_UTC: {report_payload['started_at_utc']}",
         f"FINISHED_AT_UTC: {report_payload['finished_at_utc']}",
@@ -586,7 +608,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         f"SUMMARY: {report_payload['requester']['summary']}",
         "",
     ]
-    for field in PUBLIC_FIELDS:
+    for field in parameter_fields_for_job(job):
         if field["name"] in report_payload["parameters"]:
             summary_lines.append(f"PARAM_{field['name'].upper()}: {report_payload['parameters'][field['name']]}")
     summary_lines.extend(
@@ -604,7 +626,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         + text_body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         + "</pre>"
     )
-    send_email(recipient, f"Arminator generation report {job.get('job_id')}", text_body, html_body)
+    send_email(recipient, "ARM GENERATION", text_body, html_body)
 
 
 def scrub_job_personal_data(job_id: str) -> None:
@@ -772,9 +794,14 @@ def dispatch_once() -> None:
 
 
 def create_job(payload: Dict[str, Any], client_id: str, api_prefix: str = "/api") -> Tuple[int, Dict[str, Any]]:
-    parameters, errors = validate_parameters(payload)
+    arm_version, errors = validate_arm_version(payload)
+    parameters: Dict[str, Any] = {}
+    selected_parts: List[str] = []
+    if arm_version:
+        parameters, parameter_errors = validate_parameters(payload, arm_version)
+        selected_parts = resolve_selected_parts(payload.get("parts"), arm_version)
+        errors.extend(parameter_errors)
     requester, requester_errors = validate_requester_details(payload)
-    selected_parts = resolve_selected_parts(payload.get("parts"))
     errors.extend(requester_errors)
 
     if errors:
@@ -784,7 +811,8 @@ def create_job(payload: Dict[str, Any], client_id: str, api_prefix: str = "/api"
     if not session:
         return 403, {"error": "Verify your email before generating files."}
 
-    request_hash = build_request_hash(parameters, selected_parts)
+    assert arm_version is not None
+    request_hash = build_request_hash(arm_version, parameters, selected_parts)
     existing_job = pick_active_by_hash(request_hash)
     if existing_job:
         existing_payload = job_to_payload(existing_job, cached=False, api_prefix=api_prefix)
@@ -817,6 +845,7 @@ def create_job(payload: Dict[str, Any], client_id: str, api_prefix: str = "/api"
         "created_at": now,
         "updated_at": now,
         "client_id": client_id,
+        "arm_version": arm_version,
         "status": "queued",
         "progress": 0,
         "message": "Queued",

@@ -38,6 +38,10 @@ Terraform for the live stack is under [`infra/aws/`](/Users/droo/arminator/infra
   - left: request details
   - middle: arm selection and measurements
   - right: generation status
+- The middle column now requires an arm-version choice before generation:
+  - `Version2 Alfie Edition`
+  - `Version 3 BETA`
+- No arm version is preselected on first load
 - Full-kit generation only. Users no longer pick individual parts.
 - The primary CTA is `Generate Arm`.
 - User-facing copy prefers `generate/generating`, not `render/rendering`.
@@ -64,6 +68,12 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
 
 - White background and Team UnLimbited-aligned palette
 - Team UnLimbited header/logo treatment
+- Panel headings now use:
+  - `1 - Request Details`
+  - `2 - Select Device and Set Parameters`
+  - `3 - Generate`
+- Panel headings use `Poppins`; main UI/body text uses `Open Sans`
+- Section legends are bold while field/control values are regular weight
 - Country is a dropdown, auto-defaulted from the CloudFront country header when available
 - Recipient flow includes:
   - recipient sex
@@ -72,6 +82,16 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
 - Project and Other flows share the summary field, with a dynamic label:
   - `Project Summary`
   - `Other Summary`
+- `V2` and `V3` use different SCAD-derived parameter schemas and labels
+- `V2` currently presents:
+  - `Arm Selection`
+  - `Hand Measurements (mm)`
+  - `Arm Measurements (mm)`
+  - `Other Parameters`
+- `V3` currently presents:
+  - `Arm Selection`
+  - `Hand Measurements (mm)`
+  - `Arm Measurements (mm)`
 - Hand measurements use a 2x2 desktop layout to reduce vertical space
 - Progress image box switches per generated part from [`progressimages/`](/Users/droo/arminator/progressimages)
 - The generated STL filename bullet list was intentionally removed from the status UI so the layout fits without scrolling
@@ -113,6 +133,10 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
 - If the local machine does not have usable `docker`, the renderer image can be rebuilt on a separate Docker-capable machine.
 - The live renderer now uses a dedicated `openscad/openscad:trixie`-based image with Manifold forced through [`Dockerfile.renderer-trixie`](/Users/droo/arminator/Dockerfile.renderer-trixie).
 - Rollback instructions for that renderer image are kept in [`RENDERER_TRIXIE_ROLLOUT.md`](/Users/droo/arminator/RENDERER_TRIXIE_ROLLOUT.md).
+- Internal structured generation reports are sent to `drew@teamunlimbited.org` with the subject `ARM GENERATION`.
+- Generated ZIP/job retention now defaults to 7 days.
+- Completion emails now explicitly state that the generator download link is valid for 7 days.
+- A renderer-side bug on `2026-03-21` caused internal generation reports to fail with `NameError: name 'json' is not defined`; that requires a renderer image rebuild to fix in production.
 
 ### Rendering performance
 
@@ -224,9 +248,10 @@ Legacy files still in the repo but not in the production path:
 ## Recommended handoff reading order
 
 1. [`README.md`](/Users/droo/arminator/README.md)
-2. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
-3. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
-4. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
+2. [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md)
+3. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
+4. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
+5. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
 
 ## Current risk areas
 

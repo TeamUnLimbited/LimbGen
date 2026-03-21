@@ -17,20 +17,24 @@ from botocore.exceptions import ClientError
 from flask import Flask, abort, jsonify, redirect, request, send_file, send_from_directory, url_for
 
 from arminator_common import (
+    ARM_VERSION_OPTIONS,
     BASE_DIR,
     JOB_RETENTION_HOURS,
     JOBS_DIR,
-    PART_OPTIONS,
-    PUBLIC_FIELDS,
     JobState,
     build_archive_name,
     build_render_command,
+    build_render_parameters,
     build_request_hash,
     from_dynamodb_value,
+    get_render_steps,
+    get_part_labels,
+    get_public_fields,
     get_job_directory,
     make_output_filename,
     resolve_selected_parts,
     to_dynamodb_value,
+    validate_arm_version,
     validate_parameters,
 )
 
@@ -109,6 +113,7 @@ def local_job_to_payload(job: JobState) -> Dict[str, Any]:
         "updated_at": job.updated_at,
         "cached": job.cached,
         "duplicate_of": job.duplicate_of,
+        "arm_version": job.arm_version,
     }
     if job.download_name:
         payload["download_url"] = url_for("download_job_api", job_id=job.job_id, _external=False)
@@ -229,8 +234,9 @@ def run_openscad_with_heartbeat(job_id: str, command: List[str], part: str) -> T
             job_processes.pop(job_id, None)
 
 
-def render_part(job_id: str, part: str, parameters: Dict[str, Any], output_path: Path) -> None:
-    command = build_render_command(output_path, {**parameters, "Part": part})
+def render_part(job_id: str, arm_version: str, part: str, parameters: Dict[str, Any], output_path: Path) -> None:
+    render_parameters = build_render_parameters(arm_version, parameters, part)
+    command = build_render_command(output_path, render_parameters, arm_version)
     stdout, stderr = run_openscad_with_heartbeat(job_id, command, part)
 
     log_path = get_job_directory(job_id) / "render.log"
@@ -263,12 +269,14 @@ def mark_job_canceled(job_id: str, message: str) -> None:
 def run_job(job_id: str) -> None:
     with jobs_lock:
         job = jobs[job_id]
+        arm_version = str(job.arm_version or "").strip().lower()
         parameters = dict(job.parameters)
         selected_parts = list(job.selected_parts)
 
     job_dir = get_job_directory(job_id)
     job_dir.mkdir(parents=True, exist_ok=True)
     handedness = str(parameters["LeftRight"])
+    render_steps = get_render_steps(arm_version, selected_parts)
     total_parts = len(selected_parts)
     rendered_files: List[Path] = []
 
@@ -289,33 +297,36 @@ def run_job(job_id: str) -> None:
             status_line="Preparing OpenSCAD render workspace.",
         )
 
-        for index, part in enumerate(selected_parts, start=1):
+        completed_phases = 0
+        for index, step in enumerate(render_steps, start=1):
             with jobs_lock:
                 if jobs[job_id].cancel_requested:
                     raise RuntimeError("canceled")
 
             set_job_state(
                 job_id,
-                progress=int(((index - 1) / total_parts) * 100),
-                message=f"Rendering {part} ({index}/{total_parts})",
-                current_part=part,
-                current_part_index=index,
+                progress=int((completed_phases / total_parts) * 100) if total_parts else 0,
+                message=f"Rendering {step['status_part']} ({step['phase_index']}/{total_parts})",
+                current_part=step["status_part"],
+                current_part_index=step["phase_index"],
                 current_step="rendering",
-                status_line=f"Queued render step started for {part}.",
+                status_line=f"Queued render step started for {step['part_label']}.",
             )
 
-            output_name = make_output_filename(index, part, str(parameters["LeftRight"]))
+            output_name = make_output_filename(index, step["part_label"], str(parameters["LeftRight"]))
             output_path = job_dir / output_name
-            render_part(job_id, part, parameters, output_path)
+            render_part(job_id, arm_version, step["part_label"], parameters, output_path)
             rendered_files.append(output_path)
+            if step["phase_complete"]:
+                completed_phases += 1
 
             set_job_state(
                 job_id,
-                progress=int((index / total_parts) * 100),
-                message=f"Rendered {part} ({index}/{total_parts})",
+                progress=int((completed_phases / total_parts) * 100) if total_parts else 100,
+                message=f"Rendered {step['status_part']} ({completed_phases}/{total_parts})",
                 output_files=[path.name for path in rendered_files],
-                completed_parts=index,
-                status_line=f"Finished {part}.",
+                completed_parts=completed_phases,
+                status_line=f"Finished {step['part_label']}.",
             )
 
         set_job_state(
@@ -326,7 +337,7 @@ def run_job(job_id: str) -> None:
             status_line="Compressing generated STL files into a ZIP archive.",
         )
 
-        archive_path = job_dir / build_archive_name(parameters)
+        archive_path = job_dir / build_archive_name(parameters, arm_version)
         with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             for rendered_file in rendered_files:
                 archive.write(rendered_file, arcname=rendered_file.name)
@@ -573,6 +584,7 @@ def aws_job_to_payload(job: Dict[str, Any], cached: Optional[bool] = None) -> Di
         "updated_at": job.get("updated_at"),
         "cached": cached if cached is not None else bool(job.get("cached", False)),
         "duplicate_of": job.get("duplicate_of"),
+        "arm_version": job.get("arm_version"),
     }
     if job.get("archive_key") and job.get("status") == "completed":
         payload["download_url"] = url_for("download_job_api", job_id=job["job_id"], _external=False)
@@ -688,13 +700,19 @@ def aws_dispatch_loop() -> None:
 
 
 def aws_create_job(payload: Dict[str, Any], client_id: str):
-    parameters, errors = validate_parameters(payload)
-    selected_parts = resolve_selected_parts(payload.get("parts"))
+    arm_version, errors = validate_arm_version(payload)
+    parameters: Dict[str, Any] = {}
+    selected_parts: List[str] = []
+    if arm_version:
+        parameters, parameter_errors = validate_parameters(payload, arm_version)
+        selected_parts = resolve_selected_parts(payload.get("parts"), arm_version)
+        errors.extend(parameter_errors)
 
     if errors:
         return jsonify({"errors": errors}), 400
 
-    request_hash = build_request_hash(parameters, selected_parts)
+    assert arm_version is not None
+    request_hash = build_request_hash(arm_version, parameters, selected_parts)
     existing_job = aws_pick_existing_by_hash(request_hash)
     if existing_job:
         existing_payload = aws_job_to_payload(existing_job, cached=existing_job.get("status") == "completed")
@@ -719,6 +737,7 @@ def aws_create_job(payload: Dict[str, Any], client_id: str):
         "created_at": now,
         "updated_at": now,
         "client_id": client_id,
+        "arm_version": arm_version,
         "status": "queued",
         "progress": 0,
         "message": "Queued",
@@ -817,15 +836,19 @@ def healthcheck():
 
 @app.get("/api/config")
 def config():
+    arm_version = str(request.args.get("arm_version") or "").strip().lower()
     sections: Dict[str, List[Dict[str, Any]]] = {}
-    for field in PUBLIC_FIELDS:
-        sections.setdefault(field["section"], []).append(field)
+    if arm_version in {option["value"] for option in ARM_VERSION_OPTIONS}:
+        for field in get_public_fields(arm_version):
+            sections.setdefault(field["section"], []).append(field)
 
     return jsonify(
         {
             "title": "Build a printable UnLimbited Arm kit",
             "subtitle": "Measurements are captured here, then the STL files are rendered on demand and zipped for download.",
-            "part_options": PART_OPTIONS,
+            "arm_versions": ARM_VERSION_OPTIONS,
+            "selected_arm_version": arm_version if arm_version in {option["value"] for option in ARM_VERSION_OPTIONS} else None,
+            "part_options": get_part_labels(arm_version) if arm_version in {option["value"] for option in ARM_VERSION_OPTIONS} else [],
             "sections": [{"name": name, "fields": fields} for name, fields in sections.items()],
         }
     )
@@ -844,13 +867,19 @@ def create_job():
     if AWS_MODE:
         return aws_create_job(payload, client_id)
 
-    parameters, errors = validate_parameters(payload)
-    selected_parts = resolve_selected_parts(payload.get("parts"))
+    arm_version, errors = validate_arm_version(payload)
+    parameters: Dict[str, Any] = {}
+    selected_parts: List[str] = []
+    if arm_version:
+        parameters, parameter_errors = validate_parameters(payload, arm_version)
+        selected_parts = resolve_selected_parts(payload.get("parts"), arm_version)
+        errors.extend(parameter_errors)
 
     if errors:
         return jsonify({"errors": errors}), 400
 
-    request_hash = build_request_hash(parameters, selected_parts)
+    assert arm_version is not None
+    request_hash = build_request_hash(arm_version, parameters, selected_parts)
 
     with jobs_lock:
         existing_by_hash_id = request_to_job_id.get(request_hash)
@@ -880,6 +909,7 @@ def create_job():
         created_at=time.time(),
         updated_at=time.time(),
         client_id=client_id,
+        arm_version=arm_version,
         selected_parts=selected_parts,
         parameters=parameters,
         total_parts=len(selected_parts),

@@ -6,7 +6,7 @@
     <title>Team UnLimbited Limb Generator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alice&family=Source+Sans+3:wght@400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alice&family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700&display=swap">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -30,7 +30,7 @@
         <form id="generator-form" class="workspace">
           <section class="workspace-panel details-panel">
             <div class="panel-head">
-              <h2 id="page-title">Request details</h2>
+              <h2 id="page-title">1 - Request Details</h2>
             </div>
             <p class="panel-copy" id="page-subtitle">
               Fill in the details below and verify your email for part generation. All data captured is used for statistical analysis, we will never share or sell contact details.
@@ -48,14 +48,28 @@
 
           <section class="workspace-panel parameters-panel">
             <div class="panel-head">
-              <h2>Measurements</h2>
+              <h2>2 - Select Device and Set Parameters</h2>
             </div>
+            <fieldset class="section-card version-selector-card" id="arm-version-panel">
+              <legend>Arm Version</legend>
+              <p class="panel-copy version-selector-copy">Select a version to generate <a href="https://www.teamunlimbited.org/whichversion" target="_blank" rel="noreferrer">Read here if your not sure.</a></p>
+              <div class="radio-list version-radio-list">
+                <label class="radio-option">
+                  <input type="radio" name="arm_version" value="v2" required>
+                  <span><a href="https://www.teamunlimbited.org/version2" target="_blank" rel="noreferrer">Version2 Alfie Edition</a></span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="arm_version" value="v3" required>
+                  <span><a href="https://www.teamunlimbited.org/version3" target="_blank" rel="noreferrer">Version 3 BETA</a></span>
+                </label>
+              </div>
+            </fieldset>
             <div class="panel-sections" id="parameter-sections"></div>
           </section>
 
           <aside class="workspace-panel status-panel">
             <div class="panel-head">
-              <h2 id="job-status">Ready</h2>
+              <h2 id="job-status">3 - Generate</h2>
             </div>
             <section class="status-card">
               <div class="progress-summary">

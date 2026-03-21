@@ -63,10 +63,16 @@ It now runs as a low-idle AWS stack:
 
 The Terraform for this stack is in [`infra/aws/`](/Users/droo/arminator/infra/aws).
 
+For the architecture diagrams and component map, see [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md).
+
 ## What the app does now
 
 - Always generates the full kit; users do not choose individual parts
 - Uses the public OpenSCAD customizer parameters only
+- Requires an arm-version selection before generation:
+  - `Version2 Alfie Edition`
+  - `Version 3 BETA`
+- Loads version-specific measurement fields and validation rules from the matching SCAD source
 - Uses `Generate Arm` as the primary UI action label
 - Generates parts in this order:
   1. `Pins`
@@ -82,7 +88,11 @@ The Terraform for this stack is in [`infra/aws/`](/Users/droo/arminator/infra/aw
 - Starts the indeterminate progress animation immediately when generation begins
 - Forces fresh generation each time; completed-job cache reuse is disabled
 - Completion emails include request details, recipient/project metadata, generation parameters, and a donation link
+- Completion email download links now state that the generator link remains valid for 7 days
 - Internal structured generation reports are emailed to `drew@teamunlimbited.org`
+- Internal structured generation reports now use the subject `ARM GENERATION`
+- Internal report delivery is attempted even if the user-facing completion email fails
+- Generated ZIP/job retention now defaults to 7 days
 - After terminal completion, the job record is scrubbed of requester details and verified email
 - The verified-session draft is cleared once a job is started so form details are not retained server-side longer than necessary
 
@@ -108,6 +118,33 @@ The public UI is a three-column desktop layout:
 - left: request details
 - middle: measurements
 - right: progress and download state
+
+Current live panel headings:
+
+- `1 - Request Details`
+- `2 - Select Device and Set Parameters`
+- `3 - Generate`
+
+Current live measurements behavior:
+
+- No arm version is preselected on first load; the user must choose one to continue
+- `Version2 Alfie Edition` and `Version 3 BETA` load different parameter schemas
+- `V2` currently presents:
+  - `Arm Selection`
+  - `Hand Measurements (mm)`
+  - `Arm Measurements (mm)`
+  - `Other Parameters`
+- `V3` currently presents:
+  - `Arm Selection`
+  - `Hand Measurements (mm)`
+  - `Arm Measurements (mm)`
+
+Current live typography:
+
+- panel headings use `Poppins`
+- main UI/body text uses `Open Sans`
+- box titles/legends are bold
+- values inside inputs/selects/radios are regular weight
 
 Key frontend files:
 
@@ -219,9 +256,10 @@ The dedicated production renderer image definition is separate:
 Recommended handoff reading order:
 
 1. [`README.md`](/Users/droo/arminator/README.md)
-2. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
-3. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
-4. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
+2. [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md)
+3. [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md)
+4. [`HANDOFF.md`](/Users/droo/arminator/HANDOFF.md)
+5. [`UI_CUSTOMIZATION.md`](/Users/droo/arminator/UI_CUSTOMIZATION.md)
 
 ## License
 

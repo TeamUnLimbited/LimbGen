@@ -4,6 +4,8 @@ This file is the current operational snapshot for the live Team UnLimbited limb 
 
 For the broader design history, implementation decisions, and consolidated lessons learned, read [`PROJECT_STATUS.md`](/Users/droo/arminator/PROJECT_STATUS.md) alongside this file.
 
+For architecture diagrams and the AWS component map, read [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md).
+
 ## Live service
 
 - Public URL: [https://limbgen.teamunlimbited.org](https://limbgen.teamunlimbited.org)
@@ -50,6 +52,15 @@ Terraform outputs are defined in [`infra/aws/outputs.tf`](/Users/droo/arminator/
 - The left column collects request details
 - The middle column collects handedness and measurements
 - The right column shows progress state, progress image, part list, and download button
+- The panel headings currently shown in production are:
+  - `1 - Request Details`
+  - `2 - Select Device and Set Parameters`
+  - `3 - Generate`
+- The middle column now starts with a required arm-version selector:
+  - `Version2 Alfie Edition`
+  - `Version 3 BETA`
+- No version is preselected on first load; the version radio choice is required before generation
+- `V2` and `V3` use different measurement schemas parsed from different SCAD files
 - The UI no longer shows a generated filename bullet list
 - The main CTA is now `Generate Arm`
 - User-facing copy now consistently prefers `generate/generating`
@@ -197,8 +208,29 @@ That spelling is intentional because it was explicitly requested for the public 
 - UI/frontend copy now says `Generate Arm`
 - worker/status copy now says `generate/generating` after renderer image rebuild
 - completion now also sends a structured internal report email to `drew@teamunlimbited.org`
+- the internal structured report now uses the subject `ARM GENERATION`
+- the renderer now attempts the internal report even if the user completion email throws an exception
+- generated ZIP/job retention now defaults to 7 days
+- completion emails now state that the generator download link is valid for 7 days
 - completed/failed/canceled job records are scrubbed of requester details and verified email after terminal completion
 - verified-session drafts are cleared when a job starts, and used verification-token records are stripped of email/draft data
+
+## Recent email delivery finding
+
+- A live renderer log issue was identified on `2026-03-21`: internal generation reports were failing with `NameError: name 'json' is not defined` in [`arminator_aws_backend.py`](/Users/droo/arminator/arminator_aws_backend.py).
+- That failure affected the internal `drew@teamunlimbited.org` generation report path.
+- The fix is to import `json` in the AWS backend module and redeploy a new renderer image, because the renderer container vendors the repo code at build time.
+
+## Current live UI specifics
+
+- panel headings use `Poppins`
+- main UI/body text uses `Open Sans`
+- section legends such as `Arm Version`, `Arm Selection`, `Hand Measurements (mm)` are bold
+- field values inside controls are regular weight
+- `V2` top cards are currently stacked full-width:
+  - `Arm Selection`
+  - `Hand Measurements (mm)`
+- `V3` arm selection is centered within its card, with the dropdown text left-aligned
 
 ## Deploy procedure
 

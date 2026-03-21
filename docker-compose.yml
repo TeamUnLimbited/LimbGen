@@ -13,6 +13,6 @@ services:
       OPENSCAD_BIN: openscad
       OPENSCAD_USE_XVFB: "1"
       MAX_RENDER_WORKERS: "1"
-      JOB_RETENTION_HOURS: "24"
+      JOB_RETENTION_HOURS: "168"
     volumes:
       - ./instance/jobs:/app/instance/jobs

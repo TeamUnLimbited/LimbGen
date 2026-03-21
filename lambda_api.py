@@ -116,7 +116,9 @@ def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
         return json_response(200, {"status": "ok", "backend": "lambda"})
 
     if method == "GET" and path == "/api/config":
-        return json_response(200, frontend_config())
+        arm_version = query_param(event, "arm_version").lower() or None
+        viewer_country_code = str((headers.get("cloudfront-viewer-country") or headers.get("CloudFront-Viewer-Country") or "")).strip().upper()
+        return json_response(200, frontend_config(arm_version=arm_version, viewer_country_code=viewer_country_code))
 
     if method == "GET" and path == "/api/session":
         client_id, set_cookie = resolve_client_id(event)
