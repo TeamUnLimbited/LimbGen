@@ -649,6 +649,25 @@ def clear_session_draft(client_id: str) -> None:
     set_job_fields(session_key(client_id), {"draft": None})
 
 
+def end_session(client_id: str, headers: Optional[Dict[str, str]] = None) -> Tuple[int, Dict[str, Any]]:
+    if client_id:
+        try:
+            _ddb_table.delete_item(Key={"job_id": session_key(client_id)})
+        except ClientError as exc:
+            return 500, {"error": f"Could not end the current session: {exc}"}
+
+    payload = {
+        "verified": False,
+        "email": None,
+        "notify_completed": True,
+        "draft": None,
+        "viewer_country_code": infer_viewer_country_code(headers),
+        "verification_pending": False,
+        "message": "Session ended. Verify by magic link again to continue.",
+    }
+    return 200, payload
+
+
 def try_acquire_dispatch_lock(holder: str) -> bool:
     now = int(time.time())
     expires_at = now + DISPATCH_LOCK_TTL_SECONDS

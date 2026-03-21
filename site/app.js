@@ -21,6 +21,7 @@ const errorBox = document.getElementById("error-box");
 const generateButton = document.getElementById("generate-button");
 const cancelButton = document.getElementById("cancel-button");
 const downloadLink = document.getElementById("download-link");
+const endSessionButton = document.getElementById("end-session-button");
 const pageTitle = document.getElementById("page-title");
 const pageSubtitle = document.getElementById("page-subtitle");
 const verificationStrip = document.getElementById("verification-strip");
@@ -250,6 +251,7 @@ function syncUiState() {
   generateButton.classList.toggle("hidden", !statusEnabled || generationActive);
   generateButton.disabled = !canGenerate;
   cancelButton.classList.toggle("hidden", !generationActive);
+  endSessionButton.disabled = generationActive;
 
   setIdleStatusCopy();
 }
@@ -373,6 +375,25 @@ function renderPartList(state) {
     return `<li class="part-list-item ${statusClass}"><span>${part}</span><strong>${marker}</strong></li>`;
   }).join("");
   partList.classList.remove("hidden");
+}
+
+function resetJobUi() {
+  currentJobState = null;
+  progressFill.style.width = "0%";
+  progressTrack.classList.remove("indeterminate");
+  progressValue.textContent = "0%";
+  setProgressVisual({ status: "idle", progress: 0 });
+  jobDetail.classList.add("hidden");
+  jobDetail.textContent = "";
+  jobMeta.classList.add("hidden");
+  jobMeta.textContent = "";
+  errorBox.classList.add("hidden");
+  errorBox.textContent = "";
+  partList.classList.add("hidden");
+  partList.innerHTML = "";
+  downloadLink.classList.add("hidden");
+  downloadLink.removeAttribute("href");
+  jobMessage.textContent = "Complete request details, verify your email, choose the device, and generate the parts.";
 }
 
 function syncSliderValue(slider) {
@@ -1186,6 +1207,45 @@ verificationForm.addEventListener("submit", async (event) => {
 
 verificationCancel.addEventListener("click", closeVerificationModal);
 verificationModalBackdrop.addEventListener("click", closeVerificationModal);
+
+endSessionButton.addEventListener("click", async () => {
+  if (hasActiveGeneration()) {
+    return;
+  }
+
+  endSessionButton.disabled = true;
+  try {
+    const response = await fetch("/api/session/end", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to end the current session.");
+    }
+
+    sessionState = {
+      ...data,
+      verification_pending: false,
+      email: "",
+    };
+    currentJobState = null;
+    setActiveJobId(null);
+    setArmVersionSelection("");
+    await loadConfig("");
+    resetJobUi();
+    closeVerificationModal();
+    setVerificationUi();
+    showSubmissionNote(data.message || "Session ended. Verify by magic link again to continue.");
+  } catch (error) {
+    showSubmissionNote(error.message, false);
+  } finally {
+    syncUiState();
+  }
+});
 
 cancelButton.addEventListener("click", async () => {
   const jobId = getActiveJobId();

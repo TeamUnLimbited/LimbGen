@@ -6,6 +6,7 @@ from arminator_aws_backend import (
     cancel_job,
     confirm_verification_token,
     create_job,
+    end_session,
     frontend_config,
     generate_download_url,
     get_session_payload,
@@ -22,6 +23,10 @@ def build_client_cookie(client_id: str) -> str:
         f"{COOKIE_NAME}={client_id}; Path=/; Max-Age={COOKIE_MAX_AGE_SECONDS}; "
         "Secure; HttpOnly; SameSite=Lax"
     )
+
+
+def clear_client_cookie() -> str:
+    return f"{COOKIE_NAME}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax"
 
 
 def response_headers(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
@@ -123,6 +128,11 @@ def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     if method == "GET" and path == "/api/session":
         client_id, set_cookie = resolve_client_id(event)
         return json_response(200, get_session_payload(client_id, headers=headers), set_cookie=set_cookie)
+
+    if method == "POST" and path == "/api/session/end":
+        client_id = str(request_cookie_map(event).get(COOKIE_NAME) or "").strip()
+        status_code, response_payload = end_session(client_id, headers=headers)
+        return json_response(status_code, response_payload, set_cookie=clear_client_cookie())
 
     if method == "POST" and path == "/api/verification-links":
         try:

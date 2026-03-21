@@ -456,6 +456,12 @@ button:focus,
   padding-top: 0.25rem;
 }
 
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 button,
 .download-link {
   display: inline-flex;
@@ -484,7 +490,7 @@ button:hover:not(:disabled),
 
 button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .secondary-button {
