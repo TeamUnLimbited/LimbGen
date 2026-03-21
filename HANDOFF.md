@@ -210,7 +210,7 @@ If the renderer container code changes, a new image must be built and pushed bef
 
 This machine may not have `docker`, so the current documented fallback is:
 
-1. sync the repo to the remote Docker host `192.168.1.103`
+1. sync the repo to a Docker-capable build host
 2. `docker login` that host to ECR
 3. build and push the renderer image there
 4. update [`infra/aws/terraform.tfvars`](/Users/droo/arminator/infra/aws/terraform.tfvars) with the new `renderer_image` tag and `deployment_version`

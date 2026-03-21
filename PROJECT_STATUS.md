@@ -110,7 +110,7 @@ This is controlled by `PART_RENDER_PRIORITY` in [`arminator_common.py`](/Users/d
 
 - Static frontend + Lambda + one-off Fargate tasks is materially cheaper than an always-on ECS web container.
 - The renderer container still has to be rebuilt separately when worker code changes.
-- This local machine does not have usable `docker`, so the renderer image has been rebuilt on the remote Docker host `192.168.1.103`.
+- If the local machine does not have usable `docker`, the renderer image can be rebuilt on a separate Docker-capable machine.
 - The live renderer now uses a dedicated `openscad/openscad:trixie`-based image with Manifold forced through [`Dockerfile.renderer-trixie`](/Users/droo/arminator/Dockerfile.renderer-trixie).
 - Rollback instructions for that renderer image are kept in [`RENDERER_TRIXIE_ROLLOUT.md`](/Users/droo/arminator/RENDERER_TRIXIE_ROLLOUT.md).
 

@@ -20,6 +20,8 @@ No `.scad` files are committed to this repository. The real `UnLimbited Arm V3.0
 
 Without that local file, render and deployment paths that package the OpenSCAD source will not work.
 
+For a fresh clone checklist, see [`SETUP_ON_NEW_MACHINE.md`](/Users/droo/arminator/SETUP_ON_NEW_MACHINE.md).
+
 ## Renderer image
 
 The built renderer container image is not stored in Git. This repository tracks the image definition and rollout inputs instead:
@@ -174,7 +176,7 @@ The current deployment version is:
 
 - `20260320-2259-renderer-trixie`
 
-When local `docker` is unavailable, the renderer image can be rebuilt on the remote Docker host at `192.168.1.103` and then rolled out by updating [`infra/aws/terraform.tfvars`](/Users/droo/arminator/infra/aws/terraform.tfvars) and applying the ECS task definition/Lambda changes.
+When local `docker` is unavailable, the renderer image can be rebuilt on another Docker-capable machine and then rolled out by updating [`infra/aws/terraform.tfvars`](/Users/droo/arminator/infra/aws/terraform.tfvars) and applying the ECS task definition/Lambda changes.
 
 The current live renderer path is the dedicated `trixie` OpenSCAD image described in [`Dockerfile.renderer-trixie`](/Users/droo/arminator/Dockerfile.renderer-trixie). Rollout and rollback instructions are documented in [`RENDERER_TRIXIE_ROLLOUT.md`](/Users/droo/arminator/RENDERER_TRIXIE_ROLLOUT.md).
 

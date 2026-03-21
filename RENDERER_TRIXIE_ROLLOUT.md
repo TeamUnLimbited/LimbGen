@@ -38,7 +38,7 @@ That means the application code stays unchanged while the renderer task gets new
 
 ## Pre-deploy checks
 
-1. Build the image on the remote Docker host `192.168.1.103`.
+1. Build the image on a Docker-capable build host.
 2. Run a full-kit render locally on that host and confirm the image can generate all five parts.
 3. Compare at least the `Hand` and `Forearm` STL outputs against the current production image.
 4. Confirm the image has:
