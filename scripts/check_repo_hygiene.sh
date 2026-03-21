@@ -37,7 +37,7 @@ do
   fi
 done
 
-TRACKED_FILES="$("$GIT_BIN" ls-files)"
+TRACKED_FILES="$("$GIT_BIN" ls-files | "$RG_BIN" -v '^scripts/check_repo_hygiene\.sh$')"
 if [[ -n "$TRACKED_FILES" ]]; then
   printf '%s\n' "$TRACKED_FILES" | tr '\n' '\0' | xargs -0 "$RG_BIN" -n --no-heading \
     -e 'AKIA[0-9A-Z]{16}' \
