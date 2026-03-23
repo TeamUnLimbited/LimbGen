@@ -102,6 +102,9 @@ let sessionState = {
   notify_completed: true,
   viewer_country_code: "",
   verification_pending: false,
+  generation_limit: 15,
+  generation_count: 0,
+  generation_remaining: 15,
 };
 let latestConfig = null;
 let currentJobState = null;
@@ -205,6 +208,14 @@ function hasActiveGeneration() {
   return Boolean(currentJobState && isActiveState(currentJobState));
 }
 
+function generationRemaining() {
+  return Number(sessionState.generation_remaining ?? sessionState.generation_limit ?? 0);
+}
+
+function hasGenerationAllowance() {
+  return generationRemaining() > 0;
+}
+
 function setPanelDisabled(panel, disabled) {
   panel.classList.toggle("is-disabled", disabled);
   panel.setAttribute("aria-disabled", disabled ? "true" : "false");
@@ -225,6 +236,9 @@ function setIdleStatusCopy() {
   if (!sessionState.verified) {
     jobStatus.textContent = sessionState.verification_pending ? "Check your email to unlock the flow" : "Waiting for verification";
     jobMessage.textContent = "Complete request details, click Verify Session, and verify your email to unlock the generator.";
+  } else if (!hasGenerationAllowance()) {
+    jobStatus.textContent = "Session generation limit reached";
+    jobMessage.textContent = `This verified session has used all ${sessionState.generation_limit} generation slots. Verify again after 7 days to continue.`;
   } else if (!selectedArmVersion) {
     jobStatus.textContent = "Select a device to continue";
     jobMessage.textContent = "Choose Version 2, Version 3 Beta, or UnLimbited Phoenix to unlock generation.";
@@ -242,6 +256,7 @@ function syncUiState() {
   const statusEnabled = generationActive || (verified && Boolean(selectedArmVersion));
   const canGenerate = statusEnabled
     && !generationActive
+    && hasGenerationAllowance()
     && sectionValidity(requestSections)
     && sectionValidity(parameterSections);
 
@@ -516,8 +531,8 @@ function setVerificationUi() {
   if (sessionState.verified) {
     verificationTitle.textContent = "Email verified";
     verificationDetail.textContent = sessionState.notify_completed
-      ? `Verified as ${sessionState.email}. You can now select a device and completed files will also be emailed to you.`
-      : `Verified as ${sessionState.email}. You can now select a device and generate parts.`;
+      ? `Verified as ${sessionState.email}. ${generationRemaining()} of ${sessionState.generation_limit} generation slots remain in this 7-day session, and completed files will also be emailed to you.`
+      : `Verified as ${sessionState.email}. ${generationRemaining()} of ${sessionState.generation_limit} generation slots remain in this 7-day session.`;
   } else if (sessionState.verification_pending) {
     verificationTitle.textContent = "Verification link sent";
     verificationDetail.textContent = `A sign-in link was sent to ${sessionState.email}. Open it to unlock device selection and generation.`;
@@ -1077,6 +1092,15 @@ async function submitJob(payload) {
       }
 
       if (response.status === 429) {
+        if (typeof data.generation_limit === "number") {
+          sessionState = {
+            ...sessionState,
+            generation_limit: data.generation_limit,
+            generation_count: data.generation_count ?? sessionState.generation_count,
+            generation_remaining: data.generation_remaining ?? 0,
+          };
+          setVerificationUi();
+        }
         setActiveJobId(null);
         showSubmissionNote(data.error || "I'm really busy come back in a bit !", false);
         setJobUi({
@@ -1103,6 +1127,15 @@ async function submitJob(payload) {
     }
 
     setJobUi(data);
+    if (!data.reused_existing_job) {
+      const nextCount = Number(sessionState.generation_count || 0) + 1;
+      sessionState = {
+        ...sessionState,
+        generation_count: nextCount,
+        generation_remaining: Math.max(0, Number(sessionState.generation_limit || nextCount) - nextCount),
+      };
+      setVerificationUi();
+    }
     if (data.requester || data.parameters || data.arm_version) {
       const draftPayload = {
         arm_version: data.arm_version || getSelectedArmVersion(),

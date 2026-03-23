@@ -425,8 +425,13 @@ data "archive_file" "lambda" {
   }
 
   source {
-    content  = file("${path.module}/../../UnLimbited Arm V3.00.scad")
-    filename = "UnLimbited Arm V3.00.scad"
+    content  = file("${path.module}/../../correctv3/UnLimbited Arm V3.00.scad")
+    filename = "correctv3/UnLimbited Arm V3.00.scad"
+  }
+
+  source {
+    content  = file("${path.module}/../../correctv3/Splines.scad")
+    filename = "correctv3/Splines.scad"
   }
 
   source {

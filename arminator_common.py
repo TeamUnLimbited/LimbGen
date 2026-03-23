@@ -292,7 +292,7 @@ def apply_field_overrides(arm_version: str, fields: List[Dict[str, Any]]) -> Lis
 def build_arm_version_specs() -> Dict[str, ArmVersionSpec]:
     spec_paths = {
         "v2": BASE_DIR / "UnLimbited_Arm_V2.2.scad",
-        "v3": BASE_DIR / "UnLimbited Arm V3.00.scad",
+        "v3": BASE_DIR / "correctv3" / "UnLimbited Arm V3.00.scad",
         "phoenix": BASE_DIR / "UnLimbitedPhoenix.scad",
     }
     specs: Dict[str, ArmVersionSpec] = {}
@@ -431,7 +431,8 @@ def build_request_hash(arm_version: str, parameters: Dict[str, Any], selected_pa
         "arm_version": arm_version,
         "parameters": parameters,
         "parts": sorted(selected_parts),
-        "source_file": spec.scad_file.name,
+        # Include the relative SCAD path so geometry-source swaps invalidate cached jobs.
+        "source_file": str(spec.scad_file.relative_to(BASE_DIR)),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()

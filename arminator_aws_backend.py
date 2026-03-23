@@ -56,6 +56,7 @@ QUEUE_FULL_MESSAGE = "I'm really busy come back in a bit !"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SESSION_PREFIX = "session#"
 VERIFY_PREFIX = "verify#"
+SESSION_GENERATION_LIMIT = 15
 
 _session = boto3.session.Session(region_name=AWS_REGION)
 _ddb_table = _session.resource("dynamodb").Table(ARMINATOR_JOBS_TABLE)
@@ -377,11 +378,15 @@ def require_render_configuration() -> None:
 
 def get_session_payload(client_id: str, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     session = get_verified_session(client_id)
+    generation_count = int(session.get("generation_count", 0) or 0) if session else 0
     return {
         "verified": bool(session),
         "email": session.get("email") if session else None,
         "notify_completed": bool(session.get("notify_completed", True)) if session else True,
         "draft": session.get("draft") if session else None,
+        "generation_limit": SESSION_GENERATION_LIMIT,
+        "generation_count": generation_count,
+        "generation_remaining": max(0, SESSION_GENERATION_LIMIT - generation_count),
         "viewer_country_code": infer_viewer_country_code(headers),
     }
 
@@ -445,7 +450,29 @@ def confirm_verification_token(token: str, client_id: str, headers: Optional[Dic
     if not record:
         return 404, {"error": "Verification link not found."}
     if record.get("used"):
-        return 400, {"error": "This verification link has already been used."}
+        verified_client_id = str(record.get("verified_client_id") or "").strip()
+        if verified_client_id:
+            existing_session = get_verified_session(verified_client_id)
+            if existing_session:
+                put_job_record(
+                    {
+                        "job_id": session_key(client_id),
+                        "type": "session",
+                        "client_id": client_id,
+                        "verified": True,
+                        "email": existing_session.get("email"),
+                        "notify_completed": bool(existing_session.get("notify_completed", True)),
+                        "draft": existing_session.get("draft"),
+                        "generation_count": int(existing_session.get("generation_count", 0) or 0),
+                        "verified_at": existing_session.get("verified_at") or now,
+                        "updated_at": now,
+                        "expires_at": int(existing_session.get("expires_at") or 0),
+                    }
+                )
+                payload = get_session_payload(client_id, headers=headers)
+                payload["message"] = f"Verified as {payload.get('email') or ''}."
+                return 200, payload
+        return 400, {"error": "This verification link has expired. Request a new one."}
     if int(record.get("expires_at", 0) or 0) < int(now):
         return 400, {"error": "This verification link has expired."}
 
@@ -458,6 +485,7 @@ def confirm_verification_token(token: str, client_id: str, headers: Optional[Dic
             "email": record["email"],
             "notify_completed": bool(record.get("notify_completed", True)),
             "draft": record.get("draft"),
+            "generation_count": 0,
             "verified_at": now,
             "updated_at": now,
             "expires_at": int(now + VERIFIED_SESSION_TTL_SECONDS),
@@ -494,6 +522,7 @@ def send_completion_email(job: Dict[str, Any]) -> None:
     requester_lines: List[str] = [
         f"Arm Version: {arm_version}",
         f"Requester Name: {requester.get('name') or '-'}",
+        f"Requester Email: {recipient or '-'}",
         f"Country: {requester.get('country') or '-'}",
         f"This Device Is For: {str(requester.get('purpose') or '-').title()}",
     ]
@@ -551,6 +580,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         return
 
     requester = dict(job.get("requester") or {})
+    verified_email = str(job.get("verified_email") or "").strip()
     parameters = dict(job.get("parameters") or {})
     arm_version = str(job.get("arm_version") or "").lower()
     started_at = job.get("started_at")
@@ -573,6 +603,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         "selected_parts": list(job.get("selected_parts") or []),
         "requester": {
             "name": requester.get("name") or "",
+            "email": verified_email,
             "country": requester.get("country") or "",
             "purpose": requester.get("purpose") or "",
             "recipient_name": requester.get("recipient_name") or "",
@@ -600,6 +631,7 @@ def send_internal_generation_report(job: Dict[str, Any]) -> None:
         f"DOWNLOAD_NAME: {report_payload['download_name']}",
         "",
         f"REQUESTER_NAME: {report_payload['requester']['name']}",
+        f"REQUESTER_EMAIL: {report_payload['requester']['email']}",
         f"COUNTRY: {report_payload['requester']['country']}",
         f"PURPOSE: {report_payload['requester']['purpose']}",
         f"RECIPIENT_NAME: {report_payload['requester']['recipient_name']}",
@@ -840,6 +872,14 @@ def create_job(payload: Dict[str, Any], client_id: str, api_prefix: str = "/api"
     session = get_verified_session(client_id)
     if not session:
         return 403, {"error": "Verify your email before generating files."}
+    generation_count = int(session.get("generation_count", 0) or 0)
+    if generation_count >= SESSION_GENERATION_LIMIT:
+        return 429, {
+            "error": f"This verified session has reached its {SESSION_GENERATION_LIMIT} generation limit. Verify again after 7 days to continue.",
+            "generation_limit": SESSION_GENERATION_LIMIT,
+            "generation_count": generation_count,
+            "generation_remaining": 0,
+        }
 
     assert arm_version is not None
     request_hash = build_request_hash(arm_version, parameters, selected_parts)
@@ -902,6 +942,14 @@ def create_job(payload: Dict[str, Any], client_id: str, api_prefix: str = "/api"
         "expires_at": int(now + (JOB_RETENTION_HOURS * 3600)),
     }
     put_job_record(record)
+    _ddb_table.update_item(
+        Key={"job_id": session_key(client_id)},
+        UpdateExpression="SET generation_count = :count, updated_at = :updated_at",
+        ExpressionAttributeValues={
+            ":count": generation_count + 1,
+            ":updated_at": time.time(),
+        },
+    )
     clear_session_draft(client_id)
     dispatch_once()
     refreshed = get_job_record(job_id) or record
