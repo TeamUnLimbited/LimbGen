@@ -1,0 +1,128 @@
+UNLIMBITED PHOENIX
+
+The UnLimbited Phoenix Hand is an e-NABLE style Phoenix hand from Team UnLimbited with a thermo gauntlet. It is designed so you can choose left or right, enter the required hand scale, and generate a complete set of files at the correct size.
+
+[IMAGE PLACEMENT NOTE: Add the main Phoenix hero image here:
+/Users/droo/arminator/docs/phoenix-hero.jpg
+Original source:
+https://cdn.thingiverse.com/renders/b6/ba/2b/72/1c/798b003db42b9d9dd5f510b3dc60b2b0_preview_featured.jpg]
+
+OVERVIEW
+
+The Phoenix device is intended to generate all required files in a single ZIP at the selected scale.
+
+According to the original Team UnLimbited Thingiverse listing:
+
+- choose left or right
+- enter the scale
+- all required files will be generated and included in a single ZIP file at the correct scale
+
+WHAT YOU NEED
+
+To generate a Phoenix device, you need:
+
+Hand Selection
+Choose whether the device is for the left or right hand.
+
+Hand Scale (%)
+Enter the required scale percentage for the hand.
+
+[IMAGE PLACEMENT NOTE: Re-use the Phoenix hero image here if you want a second visual break, or keep this section text-only.]
+
+HOW IT WORKS
+
+The Phoenix generator keeps the workflow simple:
+
+1. Select the hand the device is for
+2. Enter the required hand scale percentage
+3. Generate the files
+4. Download the ZIP package
+
+This package is intended to include all of the required Phoenix hand components at the selected size.
+
+CURRENT GENERATOR INPUTS
+
+In the current Team UnLimbited generator, Phoenix presents:
+
+- Hand Selection
+- Hand Measurements (%)
+
+The current public Phoenix parameter is:
+
+- Hand Scale (%)
+
+ABOUT THE DESIGN
+
+The Thingiverse listing describes this as:
+
+E-Nable Phoenix hand with thermo gauntlet.
+
+It is intended to provide a Phoenix-style hand solution generated at the correct scale for the recipient.
+
+THINGIVERSE UPDATE NOTES
+
+The original Thingiverse listing notes the following updates:
+
+Updated 17/03/2017:
+- a missing pin was added
+
+Updated 14/03/2017:
+- a scaling error was fixed
+- the palm was replaced with a cleaned version
+
+DOWNLOAD AND GENERATION
+
+The original listing states that all required files are generated and included in a single ZIP file at the correct scale.
+
+If you are using the Team UnLimbited generator, select:
+
+- UnLimbited Phoenix
+- the correct hand
+- the required hand scale percentage
+
+Then generate and download the ZIP package.
+
+WHAT THIS PAGE SHOULD FOCUS ON
+
+Because the original Thingiverse listing is brief, this page works best as:
+
+- a Phoenix overview page
+- a quick guide to the required inputs
+- a direct route to the generator
+- a place to explain that the output is a full ZIP package of Phoenix parts
+
+If you want, a separate page can later be created for:
+
+- print settings
+- assembly guidance
+- fitting and strapping
+- stringing instructions
+
+NEED HELP?
+
+For feedback or questions, contact:
+
+hello@teamunlimbited.org
+
+To learn more:
+
+Team UnLimbited:
+https://www.teamunlimbited.org/
+
+Thingiverse source listing:
+https://www.thingiverse.com/thing:1674320
+
+SOURCE NOTES
+
+This page draft is based on:
+
+- the Team UnLimbited Thingiverse listing for Unlimbited Phoenix Hand
+- the currently implemented Phoenix generator inputs in this repository
+
+ASSET LIST
+
+Phoenix hero image:
+/Users/droo/arminator/docs/phoenix-hero.jpg
+
+Original Thingiverse image source:
+https://cdn.thingiverse.com/renders/b6/ba/2b/72/1c/798b003db42b9d9dd5f510b3dc60b2b0_preview_featured.jpg

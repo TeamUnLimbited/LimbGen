@@ -66,6 +66,19 @@ The Terraform for this stack is in [`infra/aws/`](/Users/droo/arminator/infra/aw
 
 For the architecture diagrams and component map, see [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md).
 
+## Website copy drafts
+
+The repository now includes paste-ready website copy drafts for the public device-information pages:
+
+- [`docs/version2-page-draft.md`](/Users/droo/arminator/docs/version2-page-draft.md)
+- [`docs/version2-page-paste-ready-with-image-notes.txt`](/Users/droo/arminator/docs/version2-page-paste-ready-with-image-notes.txt)
+- [`docs/phoenix-page-paste-ready-with-image-notes.txt`](/Users/droo/arminator/docs/phoenix-page-paste-ready-with-image-notes.txt)
+
+Supporting extracted/collected image assets live in:
+
+- [`docs/version2-assets/`](/Users/droo/arminator/docs/version2-assets)
+- [`docs/phoenix-hero.jpg`](/Users/droo/arminator/docs/phoenix-hero.jpg)
+
 ## What the app does now
 
 - Always generates the full kit; users do not choose individual parts

@@ -35,6 +35,19 @@ Current production stack:
 
 Terraform for the live stack is under [`infra/aws/`](/Users/droo/arminator/infra/aws).
 
+## Website page drafts
+
+The repository now also carries local handoff content for the public non-generator device pages:
+
+- [`docs/version2-page-draft.md`](/Users/droo/arminator/docs/version2-page-draft.md)
+- [`docs/version2-page-paste-ready-with-image-notes.txt`](/Users/droo/arminator/docs/version2-page-paste-ready-with-image-notes.txt)
+- [`docs/phoenix-page-paste-ready-with-image-notes.txt`](/Users/droo/arminator/docs/phoenix-page-paste-ready-with-image-notes.txt)
+
+Supporting assets for those drafts are stored in:
+
+- [`docs/version2-assets/`](/Users/droo/arminator/docs/version2-assets)
+- [`docs/phoenix-hero.jpg`](/Users/droo/arminator/docs/phoenix-hero.jpg)
+
 ## Live product behavior
 
 - The site opens directly to a plain form.

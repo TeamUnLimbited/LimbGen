@@ -6,6 +6,17 @@ For the broader design history, implementation decisions, and consolidated lesso
 
 For architecture diagrams and the AWS component map, read [`docs/architecture/ARCHITECTURE_OVERVIEW.md`](/Users/droo/arminator/docs/architecture/ARCHITECTURE_OVERVIEW.md).
 
+For current public website copy drafts for the non-generator Squarespace pages, read:
+
+- [`docs/version2-page-draft.md`](/Users/droo/arminator/docs/version2-page-draft.md)
+- [`docs/version2-page-paste-ready-with-image-notes.txt`](/Users/droo/arminator/docs/version2-page-paste-ready-with-image-notes.txt)
+- [`docs/phoenix-page-paste-ready-with-image-notes.txt`](/Users/droo/arminator/docs/phoenix-page-paste-ready-with-image-notes.txt)
+
+Related extracted/collected assets:
+
+- [`docs/version2-assets/`](/Users/droo/arminator/docs/version2-assets)
+- [`docs/phoenix-hero.jpg`](/Users/droo/arminator/docs/phoenix-hero.jpg)
+
 ## Live service
 
 - Public URL: [https://limbgen.teamunlimbited.org](https://limbgen.teamunlimbited.org)
