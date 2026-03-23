@@ -459,6 +459,12 @@ textarea {
   font-weight: 400;
 }
 
+input[type="number"].is-invalid {
+  border-color: #c43f3f;
+  background: #fff1f1;
+  color: #8e2020;
+}
+
 .range-slider {
   width: 100%;
   margin: 0;

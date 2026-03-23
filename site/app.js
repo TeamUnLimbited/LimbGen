@@ -498,23 +498,29 @@ function validateNumericInput(input) {
   if (!(input instanceof HTMLInputElement) || input.type !== "number") {
     return;
   }
+  input.setCustomValidity("");
+  const hasValue = input.value.trim() !== "";
   if (input.validity.badInput) {
+    input.classList.add("is-invalid");
     input.setCustomValidity("Enter numbers only.");
     return;
   }
   if (input.validity.rangeUnderflow) {
+    input.classList.add("is-invalid");
     input.setCustomValidity(`Enter ${input.min} or more.`);
     return;
   }
   if (input.validity.rangeOverflow) {
+    input.classList.add("is-invalid");
     input.setCustomValidity(`Enter ${input.max} or less.`);
     return;
   }
   if (input.validity.stepMismatch) {
+    input.classList.add("is-invalid");
     input.setCustomValidity("Enter a valid step value.");
     return;
   }
-  input.setCustomValidity("");
+  input.classList.toggle("is-invalid", hasValue && !input.checkValidity());
 }
 
 function wireNumericInputs() {
