@@ -482,6 +482,57 @@ function syncSliderValue(slider) {
     return;
   }
   target.value = slider.value;
+  validateNumericInput(target);
+}
+
+function syncRangeInputValue(input) {
+  validateNumericInput(input);
+  const slider = form.querySelector(`.range-slider[data-target="${input.name}"]`);
+  if (!slider || !input.value || !input.checkValidity()) {
+    return;
+  }
+  slider.value = input.value;
+}
+
+function validateNumericInput(input) {
+  if (!(input instanceof HTMLInputElement) || input.type !== "number") {
+    return;
+  }
+  if (input.validity.badInput) {
+    input.setCustomValidity("Enter numbers only.");
+    return;
+  }
+  if (input.validity.rangeUnderflow) {
+    input.setCustomValidity(`Enter ${input.min} or more.`);
+    return;
+  }
+  if (input.validity.rangeOverflow) {
+    input.setCustomValidity(`Enter ${input.max} or less.`);
+    return;
+  }
+  if (input.validity.stepMismatch) {
+    input.setCustomValidity("Enter a valid step value.");
+    return;
+  }
+  input.setCustomValidity("");
+}
+
+function wireNumericInputs() {
+  for (const input of document.querySelectorAll('input[type="number"]')) {
+    validateNumericInput(input);
+    input.addEventListener("input", () => {
+      validateNumericInput(input);
+      if (input.classList.contains("range-value")) {
+        syncRangeInputValue(input);
+      }
+    });
+    input.addEventListener("change", () => {
+      validateNumericInput(input);
+      if (input.classList.contains("range-value")) {
+        syncRangeInputValue(input);
+      }
+    });
+  }
 }
 
 function wireSliders() {
@@ -490,6 +541,7 @@ function wireSliders() {
     slider.addEventListener("input", () => syncSliderValue(slider));
     slider.addEventListener("change", () => syncSliderValue(slider));
   }
+  wireNumericInputs();
 }
 
 function countryNameFromCode(code) {
@@ -767,8 +819,9 @@ function renderField(field) {
     output.type = "number";
     output.value = field.default;
     output.step = field.step;
-    output.readOnly = true;
     output.required = true;
+    output.dataset.required = "true";
+    output.inputMode = field.value_type === "float" ? "decimal" : "numeric";
     if (field.min !== undefined) {
       output.min = field.min;
     }

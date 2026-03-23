@@ -453,11 +453,10 @@ textarea {
   gap: 0.4rem;
 }
 
-.range-value[readonly] {
+.range-value {
   background: #f6f9fd;
   color: var(--ink);
   font-weight: 400;
-  cursor: default;
 }
 
 .range-slider {
