@@ -2,6 +2,8 @@
 
 This repository is intentionally incomplete for rendering by itself.
 
+For the full disaster-recovery and production rebuild procedure, read [`REDEPLOY_FROM_SCRATCH.md`](/Users/droo/arminator/REDEPLOY_FROM_SCRATCH.md).
+
 What is in Git:
 
 - application code
@@ -13,7 +15,11 @@ What is in Git:
 What is intentionally not in Git:
 
 - any `.scad` source files
-- the private `UnLimbited Arm V3.00.scad` source file
+- the private OpenSCAD source bundle:
+  - `UnLimbited_Arm_V2.2.scad`
+  - `UnLimbitedPhoenix.scad`
+  - `correctv3/UnLimbited Arm V3.00.scad`
+  - `correctv3/Splines.scad`
 - local Terraform state and plans
 - local `terraform.tfvars`
 - local AWS credentials
@@ -36,8 +42,11 @@ Optional but useful:
 ## Required local setup
 
 1. Clone the repository.
-2. Supply the private OpenSCAD source locally:
-   - place the real file at `UnLimbited Arm V3.00.scad`
+2. Supply the private OpenSCAD sources locally:
+   - place `UnLimbited_Arm_V2.2.scad` at the repo root
+   - place `UnLimbitedPhoenix.scad` at the repo root
+   - place `correctv3/UnLimbited Arm V3.00.scad`
+   - place `correctv3/Splines.scad`
 3. Create local Terraform deployment settings:
    - copy [`infra/aws/terraform.tfvars.example`](/Users/droo/arminator/infra/aws/terraform.tfvars.example) to `infra/aws/terraform.tfvars`
    - fill in the real values needed for deployment
@@ -54,6 +63,8 @@ The renderer image is rebuilt from:
 - [`scripts/build_renderer_trixie_image.sh`](/Users/droo/arminator/scripts/build_renderer_trixie_image.sh)
 
 The built image itself is not stored in Git.
+
+For the full bootstrap order, HTTPS/DNS steps, SES requirements, and verification checklist, continue in [`REDEPLOY_FROM_SCRATCH.md`](/Users/droo/arminator/REDEPLOY_FROM_SCRATCH.md).
 
 ## OpenSCAD source rule
 

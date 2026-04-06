@@ -1,6 +1,30 @@
-region         = "eu-west-2"
-project_name   = "arminator"
-domain_name    = "limbgen.teamunlimbited.org"
-enable_https   = false
-renderer_image = ""
-deployment_version = "dev"
+# Copy this file to infra/aws/terraform.tfvars and replace the values below.
+# Keep enable_https = false for the first apply until ACM DNS validation is in place.
+
+region       = "eu-west-2"
+project_name = "arminator"
+
+# Public hostname served through CloudFront.
+domain_name  = "limbgen.teamunlimbited.org"
+enable_https = false
+
+# Set both to the renderer image tag you intend to deploy.
+renderer_image     = "236209347845.dkr.ecr.eu-west-2.amazonaws.com/arminator-renderer:replace-me"
+deployment_version = "replace-me"
+
+# Used in magic links and download URLs.
+public_base_url = "https://limbgen.teamunlimbited.org"
+
+# SES-backed email settings.
+email_from_address = "limbgen@teamunlimbited.org"
+email_reply_to     = "hello@teamunlimbited.org"
+report_email_to    = "drew@teamunlimbited.org"
+
+# Runtime sizing.
+renderer_task_cpu    = 2048
+renderer_task_memory = 4096
+lambda_memory_size   = 512
+lambda_timeout       = 30
+
+# Artifact retention must stay aligned with public copy.
+artifact_retention_days = 7
